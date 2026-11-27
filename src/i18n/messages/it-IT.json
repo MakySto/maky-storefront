@@ -346,7 +346,9 @@
 			"variantUnsureHelp": "Senza questa risposta non possiamo mostrarti i kit pensati per una sola versione dell’auto. Puoi completare la risposta più tardi.",
 			"chooseMonth": "In quale mese è stata prodotta l'auto?",
 			"monthHelp": "Chiediamo il mese di PRODUZIONE, non di prima immatricolazione. In quest'anno decide la compatibilità.",
-			"monthUnknown": "Non lo so"
+			"monthUnknown": "Non lo so",
+			"generationOlder": "Generazione precedente",
+			"generationNewer": "Generazione più recente"
 		},
 		"verdictQualified": "Compatibile con condizioni",
 		"verdictQualifiedDetail": "Questo set è verificato per il tuo veicolo, ma è legato a una condizione di montaggio che al momento non riusciamo a indicarti in modo comprensibile.",
@@ -1079,7 +1081,13 @@
 		"previewNotice": "Anteprima di una pagina non pubblicata. Non è visibile ai visitatori.",
 		"offersTitleGeneration": "Kit per questa generazione",
 		"offersBrowseNote": "Ogni set vale solo per il tipo di tetto e per gli anni indicati: le differenze si vedono sulle schede. Ha un'altra auto? Può cambiarla nell'intestazione.",
-		"offersGroupOther": "Tipo di tetto non indicato"
+		"offersGroupOther": "Tipo di tetto non indicato",
+		"viewYearLabel": "Anno di produzione",
+		"viewAllYears": "Tutti gli anni",
+		"viewRoofEmpty": "Qui non abbiamo un set per il tipo di tetto {roof}.",
+		"viewRoofYearEmpty": "Qui non abbiamo un set per il tipo di tetto {roof} e l'anno {year}.",
+		"viewYearEmpty": "Qui non abbiamo un set per l'anno {year}.",
+		"viewEmptyHint": "Scelga un altro tipo di tetto o un altro anno."
 	},
 	"company": {
 		"operatedBy": "Venditore:",

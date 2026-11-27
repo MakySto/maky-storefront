@@ -51,10 +51,15 @@ import {
 	type SelectorStep,
 	type VariantAnswer,
 } from "@/lib/fitment/selector-types";
-import { type GenerationCandidate } from "@/lib/fitment/selector-plan";
+import { BODY_LABEL_KEYS, candidateLabel } from "./candidate-label";
 import { chooseVehicle } from "@/lib/garage/actions";
 import { GARAGE_MAX_VEHICLES } from "@/lib/garage/limits";
-import { searchWithoutPagination, vehicleConfirmDestination } from "@/lib/garage/confirm-destination";
+import {
+	searchWithoutPagination,
+	vehicleConfirmDestination,
+	vehiclePageDestination,
+} from "@/lib/garage/confirm-destination";
+import { loadVehiclePagePath } from "@/lib/catalog-content/vehicle-page-action";
 import { REVERSE_MAP } from "@/lib/channel-map";
 import { afterTyreSize } from "@/lib/tyre-size/after-size";
 import { RoofQuestion } from "./roof-question";
@@ -126,18 +131,6 @@ type Props = {
 	 * the sheet starts at the make, as it always has.
 	 */
 	initialDraft?: Draft;
-};
-
-const BODY_LABEL_KEYS: Record<BodyType, string> = {
-	hatchback: "bodyHatchback",
-	estate: "bodyEstate",
-	saloon: "bodySaloon",
-	suv: "bodySuv",
-	mpv: "bodyMpv",
-	van: "bodyVan",
-	coupe: "bodyCoupe",
-	convertible: "bodyConvertible",
-	pickup: "bodyPickup",
 };
 
 export function VehicleSelectorSheet({
@@ -391,6 +384,20 @@ export function VehicleSelectorSheet({
 				setDraft({});
 				onOpenChange(false);
 
+				// The car's own page, with the year and the roof in the address: an address the
+				// shopper can save and send, and the same listing the category's vehicle pages show.
+				// Only from the places that are about "which sets are for my car", and only where
+				// this market has such a page (`vehiclePageDestination`); otherwise as before.
+				const ownPage = vehiclePageDestination(
+					pathname,
+					await loadVehiclePagePath(channel, selection.generationId),
+					{ year: selection.year, roof: roofType ?? null },
+				);
+				if (ownPage) {
+					router.push(ownPage);
+					return;
+				}
+
 				// From the homepage, confirming used to close the sheet and do nothing
 				// else — the hero asks for the car and the answer never arrives. Every
 				// other surface already answers in place, and pushing a shopper off a
@@ -567,7 +574,7 @@ export function VehicleSelectorSheet({
 											hint={t("selector.variantHelp")}
 											options={step.generationCandidates.map((g) => ({
 												key: g.id,
-												label: candidateLabel(g, t),
+												label: candidateLabel(g, t, step.generationCandidates ?? []),
 											}))}
 											onPick={(key) => pickGenerationCandidate(key)}
 											emptyLabel={t("selector.emptyStep")}
@@ -737,21 +744,6 @@ function monthOptions(locale: string): { key: string; label: string }[] {
 		key: String(i + 1),
 		label: format.format(new Date(Date.UTC(2001, i, 1))),
 	}));
-}
-
-/**
- * A generation candidate, named the way a person can answer it.
- *
- * Body type and door count first, production span second. Never the bare internal name on
- * its own: "B9" and "939" are our keys, and asking somebody to pick between two of them is
- * asking them to guess.
- */
-function candidateLabel(g: GenerationCandidate, t: (key: string) => string): string {
-	const shape = g.bodyTypes?.length === 1 ? t(BODY_LABEL_KEYS[g.bodyTypes[0]!]) : null;
-	// An open-ended generation reads "2015\u2013", which is the ordinary way a production
-	// span that has not ended is written.
-	const span = `${g.productionYearFrom}\u2013${g.productionYearTo ?? ""}`;
-	return [shape, span, g.name].filter(Boolean).join(" \u00b7 ");
 }
 
 /**

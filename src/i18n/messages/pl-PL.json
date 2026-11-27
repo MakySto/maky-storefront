@@ -346,7 +346,9 @@
 			"variantUnsureHelp": "Bez tej odpowiedzi nie pokażemy zestawów przeznaczonych tylko dla jednej wersji auta. Odpowiedź możesz uzupełnić później.",
 			"chooseMonth": "W którym miesiącu wyprodukowano samochód?",
 			"monthHelp": "Pytamy o miesiąc PRODUKCJI, nie pierwszej rejestracji. W tym roku decyduje o kompatybilności.",
-			"monthUnknown": "Nie wiem"
+			"monthUnknown": "Nie wiem",
+			"generationOlder": "Starsza generacja",
+			"generationNewer": "Nowsza generacja"
 		},
 		"verdictQualified": "Pasuje z warunkami montażu",
 		"verdictQualifiedDetail": "Ten zestaw jest potwierdzony dla Twojego pojazdu, ale obowiązuje przy nim warunek montażu, którego nie umiemy Ci teraz zrozumiale przedstawić.",
@@ -1079,7 +1081,13 @@
 		"previewNotice": "Podgląd nieopublikowanej strony. Odwiedzający jej nie widzą.",
 		"offersTitleGeneration": "Zestawy dla tej generacji",
 		"offersBrowseNote": "Każdy zestaw obowiązuje tylko dla podanego typu dachu i lat, różnice widać na kartach. Masz inne auto? Zmień je w nagłówku.",
-		"offersGroupOther": "Bez podanego typu dachu"
+		"offersGroupOther": "Bez podanego typu dachu",
+		"viewYearLabel": "Rok produkcji",
+		"viewAllYears": "Wszystkie lata",
+		"viewRoofEmpty": "Dla typu dachu {roof} nie mamy tu zestawu.",
+		"viewRoofYearEmpty": "Dla typu dachu {roof} i rocznika {year} nie mamy tu zestawu.",
+		"viewYearEmpty": "Dla rocznika {year} nie mamy tu zestawu.",
+		"viewEmptyHint": "Wybierz inny typ dachu lub rok."
 	},
 	"company": {
 		"operatedBy": "Sprzedawca:",
