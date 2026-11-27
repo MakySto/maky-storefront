@@ -143,3 +143,21 @@ describe('Saleor search never offers the grey "no image" GIF as a thumbnail', ()
 		expect(result.products.map((p) => p.thumbnailUrl)).toEqual([undefined, REAL]);
 	});
 });
+
+describe("Saleor search, the order of relevance", () => {
+	it("asks for Saleor's own rank of the search, best first", async () => {
+		executePublicGraphQL.mockResolvedValue({
+			ok: true,
+			data: {
+				products: { totalCount: 0, edges: [], pageInfo: { hasNextPage: false, hasPreviousPage: false } },
+			},
+		});
+		await searchProducts({ query: "kuga", channel: "sk-eur" });
+		// It was RATING, a field no product of the shop carries: "relevance" was no order at all.
+		expect(executePublicGraphQL.mock.calls[0]![1].variables).toMatchObject({
+			search: "kuga",
+			sortBy: "RANK",
+			sortDirection: "DESC",
+		});
+	});
+});

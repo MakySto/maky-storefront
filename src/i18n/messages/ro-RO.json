@@ -1092,7 +1092,18 @@
 		"metaDescription": "Rezultatele căutării în oferta {siteName}.",
 		"unavailableTitle": "Căutarea este temporar indisponibilă",
 		"unavailableHelp": "Nu am putut încărca acum rezultatele pentru „{query}”. Încercați din nou peste puțin timp sau răsfoiți categoriile noastre.",
-		"correctedFrom": "Nu am găsit nimic pentru „{query}”, așa că afișăm rezultatele pentru cea mai apropiată marcă."
+		"correctedFrom": "Nu am găsit nimic pentru „{query}”, așa că afișăm rezultatele pentru cea mai apropiată marcă.",
+		"vehicleHeading": "Bare de acoperiș pentru {vehicle}",
+		"vehicleHelp": "Barele se aleg după versiunea mașinii și tipul acoperișului. Alegeți mașina și vă arătăm seturile potrivite.",
+		"vehicleOpen": "Vezi barele pentru {vehicle}",
+		"vehicleGenerations": "Versiune",
+		"vehicleRelated": "Modele înrudite",
+		"vehicleAskHeading": "Barele de acoperiș se aleg după mașină",
+		"vehicleAskHelp": "Fiecare mașină are alt acoperiș. Alegeți marca și modelul și vă arătăm barele potrivite pentru mașina dumneavoastră.",
+		"vehicleAskCta": "Alege mașina",
+		"tyreHeading": "Lanțuri de zăpadă pentru anvelope {size}",
+		"tyreCta": "Vezi lanțurile pentru această dimensiune",
+		"closestNote": "Nu am găsit o potrivire exactă. Afișăm produsele cele mai apropiate."
 	},
 	"account": {
 		"welcomeBack": "Bine ați revenit",

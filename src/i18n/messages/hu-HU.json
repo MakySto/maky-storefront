@@ -1092,7 +1092,18 @@
 		"metaDescription": "Keresési találatok a {siteName} kínálatában.",
 		"unavailableTitle": "A keresés átmenetileg nem érhető el",
 		"unavailableHelp": "A(z) „{query}” találatait most nem sikerült betölteni. Próbálja újra egy kis idő múlva, vagy böngésszen kategóriáink között.",
-		"correctedFrom": "A(z) „{query}” keresésre nincs találat, ezért a leginkább hasonló márka találatait mutatjuk."
+		"correctedFrom": "A(z) „{query}” keresésre nincs találat, ezért a leginkább hasonló márka találatait mutatjuk.",
+		"vehicleHeading": "Tetőcsomagtartók: {vehicle}",
+		"vehicleHelp": "A csomagtartót az autó kivitele és a tető típusa szerint kell választani. Válassza ki az autóját, és megmutatjuk a hozzá illő szetteket.",
+		"vehicleOpen": "Csomagtartók megtekintése: {vehicle}",
+		"vehicleGenerations": "Kivitel",
+		"vehicleRelated": "Rokon modellek",
+		"vehicleAskHeading": "A tetőcsomagtartót az autó szerint választhatja ki",
+		"vehicleAskHelp": "Minden autónak más a teteje. Válassza ki a márkát és a modellt, és megmutatjuk az autójára illő csomagtartókat.",
+		"vehicleAskCta": "Autó kiválasztása",
+		"tyreHeading": "Hóláncok {size} méretű gumiabroncsra",
+		"tyreCta": "Láncok megtekintése ehhez a mérethez",
+		"closestNote": "Pontos találatot nem találtunk. A leginkább hasonló termékeket mutatjuk."
 	},
 	"account": {
 		"welcomeBack": "Üdvözöljük újra",

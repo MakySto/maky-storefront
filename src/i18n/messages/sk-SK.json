@@ -1092,7 +1092,18 @@
 		"metaDescription": "Výsledky vyhľadávania v ponuke {siteName}.",
 		"unavailableTitle": "Vyhľadávanie je dočasne nedostupné",
 		"unavailableHelp": "Výsledky pre „{query}“ sa nám teraz nepodarilo načítať. Skúste to o chvíľu znova alebo prejdite naše kategórie.",
-		"correctedFrom": "Pre „{query}“ sme nič nenašli, preto zobrazujeme výsledky pre najbližšiu značku."
+		"correctedFrom": "Pre „{query}“ sme nič nenašli, preto zobrazujeme výsledky pre najbližšiu značku.",
+		"vehicleHeading": "Strešné nosiče pre {vehicle}",
+		"vehicleHelp": "Nosič sa vyberá podľa vyhotovenia auta a typu strechy. Vyberte svoje auto a ukážeme zostavy, ktoré naň sedia.",
+		"vehicleOpen": "Zobraziť nosiče pre {vehicle}",
+		"vehicleGenerations": "Vyhotovenie",
+		"vehicleRelated": "Príbuzné modely",
+		"vehicleAskHeading": "Strešný nosič vyberiete podľa auta",
+		"vehicleAskHelp": "Každé auto má inú strechu. Vyberte značku a model a ukážeme nosiče, ktoré na vaše auto sedia.",
+		"vehicleAskCta": "Vybrať auto",
+		"tyreHeading": "Snehové reťaze na pneumatiky {size}",
+		"tyreCta": "Zobraziť reťaze na tento rozmer",
+		"closestNote": "Presnú zhodu sme nenašli. Zobrazujeme najbližšie produkty."
 	},
 	"account": {
 		"welcomeBack": "Vitajte späť",

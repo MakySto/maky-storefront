@@ -1,0 +1,126 @@
+# The products the shop's own search index is built from (`src/lib/search/shelf-source.ts`): every
+# product type except the roof-rack sets, one page at a time. A market holds under a thousand of
+# them (893 in Slovakia, 468 in Germany, read 2026-11-27).
+#
+# Only what a search reads: the name, the maker, the category and its parents, the short parameter
+# values, the codes a customer may type (variant code, EAN) and the price the price sort orders by.
+# No photograph and no stock: the result cards are read fresh, by id, when a page is shown.
+#
+# The translation selections mirror `SitemapProducts` field for field, because the index applies the
+# same exact-locale boundary (`resolveExactLocaleProduct`): a product the listing would refuse abroad
+# must not be found by the search either.
+query SearchShelfProducts(
+	$channel: String!
+	$first: Int!
+	$after: String
+	$lang: LanguageCodeEnum!
+	$localized: Boolean!
+	$productTypes: [ID!]!
+) {
+	products(channel: $channel, first: $first, after: $after, filter: { productTypes: $productTypes }) {
+		edges {
+			node {
+				id
+				name
+				slug
+				created
+				isAvailableForPurchase
+				ean: metafield(key: "cfm_ean")
+				translation(languageCode: $lang) @include(if: $localized) {
+					name
+					slug
+					description
+					seoTitle
+					seoDescription
+				}
+				category {
+					id
+					name
+					slug
+					translation(languageCode: $lang) @include(if: $localized) {
+						name
+						slug
+					}
+					parent {
+						id
+						name
+						slug
+						translation(languageCode: $lang) @include(if: $localized) {
+							name
+						}
+						parent {
+							id
+							name
+							slug
+							translation(languageCode: $lang) @include(if: $localized) {
+								name
+							}
+						}
+					}
+				}
+				attributes {
+					attribute {
+						slug
+						name
+						inputType
+						translation(languageCode: $lang) @include(if: $localized) {
+							name
+						}
+					}
+					values {
+						name
+						translation(languageCode: $lang) @include(if: $localized) {
+							name
+						}
+					}
+				}
+				pricing {
+					priceRange {
+						start {
+							gross {
+								amount
+							}
+						}
+					}
+				}
+				variants {
+					sku
+					name
+					selectionAttributes: attributes(variantSelection: VARIANT_SELECTION) @include(if: $localized) {
+						attribute {
+							name
+							translation(languageCode: $lang) {
+								name
+							}
+						}
+						values {
+							name
+							translation(languageCode: $lang) {
+								name
+							}
+						}
+					}
+					nonSelectionAttributes: attributes(variantSelection: NOT_VARIANT_SELECTION)
+						@include(if: $localized) {
+						attribute {
+							name
+							translation(languageCode: $lang) {
+								name
+							}
+						}
+						values {
+							name
+							translation(languageCode: $lang) {
+								name
+							}
+						}
+					}
+				}
+			}
+		}
+		pageInfo {
+			hasNextPage
+			endCursor
+		}
+	}
+}

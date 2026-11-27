@@ -1092,7 +1092,18 @@
 		"metaDescription": "Search results from the {siteName} catalogue.",
 		"unavailableTitle": "Search is temporarily unavailable",
 		"unavailableHelp": "We couldn't load the results for “{query}” just now. Please try again in a moment or browse our categories.",
-		"correctedFrom": "We found nothing for “{query}”, so we're showing results for the closest brand."
+		"correctedFrom": "We found nothing for “{query}”, so we're showing results for the closest brand.",
+		"vehicleHeading": "Roof racks for {vehicle}",
+		"vehicleHelp": "The right rack depends on the version of the car and its roof type. Choose your car and we'll show the sets that fit it.",
+		"vehicleOpen": "Show roof racks for {vehicle}",
+		"vehicleGenerations": "Version",
+		"vehicleRelated": "Related models",
+		"vehicleAskHeading": "Roof racks are chosen by car",
+		"vehicleAskHelp": "Every car has a different roof. Choose the make and model and we'll show the racks that fit your car.",
+		"vehicleAskCta": "Choose your car",
+		"tyreHeading": "Snow chains for {size} tires",
+		"tyreCta": "Show chains for this size",
+		"closestNote": "We found no exact match. Showing the closest products."
 	},
 	"account": {
 		"welcomeBack": "Welcome back",

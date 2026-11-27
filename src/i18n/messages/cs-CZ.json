@@ -1092,7 +1092,18 @@
 		"metaDescription": "Výsledky vyhledávání v nabídce {siteName}.",
 		"unavailableTitle": "Vyhledávání je dočasně nedostupné",
 		"unavailableHelp": "Výsledky pro „{query}“ se nám teď nepodařilo načíst. Zkuste to za chvíli znovu nebo si projděte naše kategorie.",
-		"correctedFrom": "Pro „{query}“ jsme nic nenašli, proto zobrazujeme výsledky pro nejbližší značku."
+		"correctedFrom": "Pro „{query}“ jsme nic nenašli, proto zobrazujeme výsledky pro nejbližší značku.",
+		"vehicleHeading": "Střešní nosiče pro {vehicle}",
+		"vehicleHelp": "Nosič se vybírá podle provedení auta a typu střechy. Vyberte své auto a ukážeme sestavy, které na něj sedí.",
+		"vehicleOpen": "Zobrazit nosiče pro {vehicle}",
+		"vehicleGenerations": "Provedení",
+		"vehicleRelated": "Příbuzné modely",
+		"vehicleAskHeading": "Střešní nosič vyberete podle auta",
+		"vehicleAskHelp": "Každé auto má jinou střechu. Vyberte značku a model a ukážeme nosiče, které na vaše auto sedí.",
+		"vehicleAskCta": "Vybrat auto",
+		"tyreHeading": "Sněhové řetězy na pneumatiky {size}",
+		"tyreCta": "Zobrazit řetězy na tento rozměr",
+		"closestNote": "Přesnou shodu jsme nenašli. Zobrazujeme nejbližší produkty."
 	},
 	"account": {
 		"welcomeBack": "Vítejte zpět",
