@@ -1084,6 +1084,7 @@
 		"offersGroupOther": "Type de toit non précisé",
 		"viewYearLabel": "Année de fabrication",
 		"viewAllYears": "Toutes les années",
+		"viewAllBrands": "Toutes les marques",
 		"viewRoofEmpty": "Nous n'avons ici aucun ensemble pour le type de toit {roof}.",
 		"viewRoofYearEmpty": "Nous n'avons ici aucun ensemble pour le type de toit {roof} et l'année {year}.",
 		"viewYearEmpty": "Nous n'avons ici aucun ensemble pour l'année {year}.",

@@ -1084,6 +1084,7 @@
 		"offersGroupOther": "Nincs megadott tetőtípus",
 		"viewYearLabel": "Gyártási év",
 		"viewAllYears": "Minden év",
+		"viewAllBrands": "Minden márka",
 		"viewRoofEmpty": "Ehhez a tetőtípushoz ({roof}) itt nincs szettünk.",
 		"viewRoofYearEmpty": "Ehhez a tetőtípushoz ({roof}) és a {year}. évhez itt nincs szettünk.",
 		"viewYearEmpty": "A {year}. évhez itt nincs szettünk.",

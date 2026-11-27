@@ -1084,6 +1084,7 @@
 		"offersGroupOther": "Bez podanego typu dachu",
 		"viewYearLabel": "Rok produkcji",
 		"viewAllYears": "Wszystkie lata",
+		"viewAllBrands": "Wszystkie marki",
 		"viewRoofEmpty": "Dla typu dachu {roof} nie mamy tu zestawu.",
 		"viewRoofYearEmpty": "Dla typu dachu {roof} i rocznika {year} nie mamy tu zestawu.",
 		"viewYearEmpty": "Dla rocznika {year} nie mamy tu zestawu.",

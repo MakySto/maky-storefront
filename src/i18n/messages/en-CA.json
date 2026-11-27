@@ -1084,6 +1084,7 @@
 		"offersGroupOther": "No roof type stated",
 		"viewYearLabel": "Model year",
 		"viewAllYears": "All years",
+		"viewAllBrands": "All brands",
 		"viewRoofEmpty": "We have no set here for the roof type {roof}.",
 		"viewRoofYearEmpty": "We have no set here for the roof type {roof} and the year {year}.",
 		"viewYearEmpty": "We have no set here for the year {year}.",
