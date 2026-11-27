@@ -19,15 +19,44 @@ const address = {
 describe("formatDeliveryLine", () => {
 	it("shows the phone as Saleor stored it, with its calling code, after the address", () => {
 		expect(formatDeliveryLine(address, "sk-SK")).toBe(
-			"Hlavná 1, Bratislava 811 01, Slovensko · +421901234561",
+			"Hlavná 1, 811 01 Bratislava, Slovensko · +421901234561",
 		);
 	});
 
 	it("is the plain address when no phone is stored, and empty without an address", () => {
 		expect(formatDeliveryLine({ ...address, phone: null }, "sk-SK")).toBe(
-			"Hlavná 1, Bratislava 811 01, Slovensko",
+			"Hlavná 1, 811 01 Bratislava, Slovensko",
 		);
 		expect(formatDeliveryLine(null, "sk-SK")).toBe("");
+	});
+
+	it("writes the town and the postal code in the address's own order", () => {
+		// Postcode first in continental Europe; town, state and code in North America (`cityLine`).
+		expect(
+			formatDeliveryLine(
+				{
+					...address,
+					phone: null,
+					city: "Berlin",
+					postalCode: "10115",
+					country: { code: "DE", country: "Germany" },
+				},
+				"de-DE",
+			),
+		).toBe("Hlavná 1, 10115 Berlin, Deutschland");
+		expect(
+			formatDeliveryLine(
+				{
+					...address,
+					phone: null,
+					city: "Austin",
+					countryArea: "TX",
+					postalCode: "78701",
+					country: { code: "US", country: "United States" },
+				},
+				"en-US",
+			),
+		).toBe("Hlavná 1, Austin, TX 78701, United States");
 	});
 });
 

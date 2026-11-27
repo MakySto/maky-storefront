@@ -6,7 +6,7 @@ import { Building2 } from "lucide-react";
 
 import { type CountryCode } from "@/checkout/graphql";
 import { useAddressFormUtils } from "@/checkout/components/address-form/use-address-form-utils";
-import { getCountryName } from "@/checkout/lib/utils/locale";
+import { countryOptions } from "@/checkout/lib/utils/locale";
 import { COMPANY_NAME_MAX_LENGTH } from "@/checkout/lib/b2b/b2b-input";
 import type { B2bCompanyFieldsValue } from "@/checkout/lib/b2b/company-form-state";
 import { VAT_ID_MAX_LENGTH, vatFieldLabelKey, vatIdExample } from "@/checkout/lib/b2b/vat-id";
@@ -140,10 +140,7 @@ export const B2bCompanyFields: FC<B2bCompanyFieldsProps> = ({
 									}
 									placeholder={t("addressForm.selectCountry")}
 									autoComplete="billing country"
-									options={availableCountries.map((code) => ({
-										value: code,
-										label: getCountryName(code, locale),
-									}))}
+									options={countryOptions(availableCountries, locale)}
 								/>
 							</div>
 							<AddressFields

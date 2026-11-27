@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { type AddressFragment, type AddressTypeEnum } from "@/checkout/graphql";
 import { cn } from "@/lib/utils";
+import { cityLine } from "@/lib/address-city-line";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetCloseButton } from "@/ui/components/ui/sheet";
 import { Button } from "@/ui/components/ui/button";
 
@@ -124,9 +125,7 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 											<p className="text-muted-foreground mt-0.5 truncate text-sm">
 												{address.streetAddress1}
 											</p>
-											<p className="text-muted-foreground truncate text-sm">
-												{address.city}, {address.postalCode}
-											</p>
+											<p className="text-muted-foreground truncate text-sm">{cityLine(address)}</p>
 										</div>
 
 										{/* Edit button (appears on hover) */}
