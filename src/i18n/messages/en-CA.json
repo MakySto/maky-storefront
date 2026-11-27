@@ -346,7 +346,9 @@
 			"variantUnsureHelp": "Without this answer we cannot show you sets made for one version of the car only. You can add the answer later.",
 			"chooseMonth": "In which month was the car built?",
 			"monthHelp": "We are asking for the month of MANUFACTURE, not first registration. In this year it decides compatibility.",
-			"monthUnknown": "I don't know"
+			"monthUnknown": "I don't know",
+			"generationOlder": "Older generation",
+			"generationNewer": "Newer generation"
 		},
 		"verdictQualified": "Fits, with conditions",
 		"verdictQualifiedDetail": "This set is verified for your vehicle, but an installation condition applies that we can't spell out clearly for you right now.",
@@ -1079,7 +1081,13 @@
 		"previewNotice": "Preview of an unpublished page. It is not shown to visitors.",
 		"offersTitleGeneration": "Sets for this generation",
 		"offersBrowseNote": "Each set applies only to the roof type and years shown, and the differences are on the cards. Another car? Change it in the header.",
-		"offersGroupOther": "No roof type stated"
+		"offersGroupOther": "No roof type stated",
+		"viewYearLabel": "Model year",
+		"viewAllYears": "All years",
+		"viewRoofEmpty": "We have no set here for the roof type {roof}.",
+		"viewRoofYearEmpty": "We have no set here for the roof type {roof} and the year {year}.",
+		"viewYearEmpty": "We have no set here for the year {year}.",
+		"viewEmptyHint": "Choose another roof type or year."
 	},
 	"company": {
 		"operatedBy": "Seller:",
