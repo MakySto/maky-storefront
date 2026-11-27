@@ -2,7 +2,7 @@
 // Writes src/lib/catalog-content/product-redirects.json from CFM's table of old -> new product addresses
 // (nordrive-kargo/zlucenie-20261030/). Reads a TSV or CSV with a header row; touches nothing else.
 //
-//   node scripts/ops/product-redirects-from-table.mjs <table.tsv> --release <name> [--market sk] [--check]
+//   node scripts/ops/product-redirects-from-table.mjs <table.tsv> --release <name> [--market sk] [--merge] [--check]
 //
 // Columns are found by header: the old address is the one named old / stara / stary / from / zdroj, the new one
 // new / nova / novy / to / ciel, an optional market one trh / market (the first matching column wins, so
@@ -11,6 +11,14 @@
 // one, else from the market column, else from --market (default sk). Anything that is not exactly one
 // slug on each side, a row that points at itself, a slug with two different targets and a target that is
 // itself retired STOPS the run with the rows named: nothing is written. --check validates and prints counts.
+//
+// The market column may also name the Saleor channel (`sk-eur`, `cz-czk`, ...), as CFM's card tables do
+// (karty-presmerovania-20261127.csv); it is read as the market that channel serves.
+//
+// --merge keeps what the file already holds and adds the table to it, under release `<old>+<name>`: the
+// file is cumulative (Kargo 2026-10-30, Berlingo K9 2026-11-06, the fitment list of 2026-11-30), and a
+// later table must not wipe an earlier one. A row that gives an existing slug a different target, and a
+// chain across the old and the new rows, stop the run as above.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -22,12 +30,27 @@ const flag = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : und
 const file = args.find((a) => !a.startsWith("--") && a !== flag("--release") && a !== flag("--market"));
 if (!file || !flag("--release")) {
 	console.error(
-		"usage: product-redirects-from-table.mjs <table.tsv|csv> --release <name> [--market sk] [--check]",
+		"usage: product-redirects-from-table.mjs <table.tsv|csv> --release <name> [--market sk] [--merge] [--check]",
 	);
 	process.exit(2);
 }
 
 const MARKETS = new Set(["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"]);
+// The Saleor channel each market is sold in (`src/lib/channel-map.ts`, CHANNEL_MAP), for a market column that names it.
+const CHANNELS = {
+	"sk-eur": "sk",
+	"cz-czk": "cz",
+	"de-eur": "de",
+	"at-eur": "at",
+	"pl-pln": "pl",
+	"hu-huf": "hu",
+	"it-eur": "it",
+	"fr-eur": "fr",
+	"es-eur": "es",
+	"ro-ron": "ro",
+	"us-usd": "us",
+	"ca-cad": "ca",
+};
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const bytes = readFileSync(file);
 const text = bytes.toString("utf8").replace(/^﻿/, "");
@@ -58,18 +81,24 @@ function parse(cell) {
 	return { market, parts };
 }
 
+const out = join(
+	dirname(fileURLToPath(import.meta.url)),
+	"../../src/lib/catalog-content/product-redirects.json",
+);
+const merging = args.includes("--merge");
+const previous = merging ? JSON.parse(readFileSync(out, "utf8")) : null;
+
 const problems = [];
 const exact = {};
+if (previous) for (const [market, map] of Object.entries(previous.exact)) exact[market] = { ...map };
+const before = Object.values(exact).reduce((n, m) => n + Object.keys(m).length, 0);
 for (const [n, line] of lines.slice(1).entries()) {
 	const row = cells(line);
 	const a = parse(row[iOld] ?? "");
 	const b = parse(row[iNew] ?? "");
+	const column = iMarket >= 0 ? row[iMarket]?.toLowerCase() : undefined;
 	const market =
-		a.market ??
-		b.market ??
-		(iMarket >= 0 ? row[iMarket]?.toLowerCase() : undefined) ??
-		flag("--market") ??
-		"sk";
+		a.market ?? b.market ?? (column ? CHANNELS[column] ?? column : undefined) ?? flag("--market") ?? "sk";
 	const where = `row ${n + 2}`;
 	if (!MARKETS.has(market)) problems.push(`${where}: market "${market}"`);
 	else if (a.parts.length !== 1 || b.parts.length !== 1)
@@ -92,9 +121,9 @@ for (const [market, map] of Object.entries(exact)) {
 const total = Object.values(exact).reduce((n, m) => n + Object.keys(m).length, 0);
 const targets = new Set(Object.values(exact).flatMap((m) => Object.values(m)));
 console.log(
-	`rows ${lines.length - 1}, entries ${total}, distinct targets ${targets.size}, markets ${
-		Object.keys(exact).join(",") || "-"
-	}`,
+	`rows ${lines.length - 1}, entries ${total}${
+		merging ? ` (${before} kept, ${total - before} added)` : ""
+	}, distinct targets ${targets.size}, markets ${Object.keys(exact).join(",") || "-"}`,
 );
 if (problems.length) {
 	console.error(`STOP: ${problems.length} problem(s), nothing written`);
@@ -109,15 +138,16 @@ const sorted = Object.fromEntries(
 		Object.fromEntries(Object.entries(map).sort(([x], [y]) => x.localeCompare(y))),
 	]),
 );
-const out = join(
-	dirname(fileURLToPath(import.meta.url)),
-	"../../src/lib/catalog-content/product-redirects.json",
-);
 const sha = createHash("sha256").update(bytes).digest("hex");
+const source = `${file.split("/").pop()} sha256 ${sha}`;
 writeFileSync(
 	out,
 	JSON.stringify(
-		{ release: flag("--release"), source: `${file.split("/").pop()} sha256 ${sha}`, exact: sorted },
+		{
+			release: previous ? `${previous.release}+${flag("--release")}` : flag("--release"),
+			source: previous ? `${previous.source} + ${source}` : source,
+			exact: sorted,
+		},
 		null,
 		"\t",
 	) + "\n",

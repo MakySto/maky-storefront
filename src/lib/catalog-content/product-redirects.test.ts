@@ -68,6 +68,45 @@ describe("the shipped product redirect table", () => {
 	});
 });
 
+// CFM's fitment list of the week of 2026-11-30 retires four generations; 21 sets were written twice, once on the retired
+// generation and once on its successor. CFM unpublishes the first of each pair in sk-eur (the slug stays in Saleor) after
+// the web has taken the list over (karty-presmerovania-20261127.csv, all of them public only in sk-eur).
+describe("the fitment list of the week of 2026-11-30: 21 duplicated sets", () => {
+	const groups = [
+		{
+			name: "Jeep Patriot MK to MK74",
+			from: "-jeep-patriot-mk-2007-2011-",
+			to: "-jeep-patriot-mk74-2007-2012-",
+			count: 8,
+		},
+		{ name: "Skoda Kamiq NW4 to NW", from: "-skoda-kamiq-nw4-2023-", to: "-skoda-kamiq-nw-2019-", count: 9 },
+		{
+			name: "Mazda 3 Hatchback 2003-2013 to BL",
+			from: "-mazda-3-hatchback-2009-2013-",
+			to: "-mazda-3-hatchback-bl-2009-2013-",
+			count: 4,
+		},
+	];
+
+	for (const group of groups) {
+		it(`sends each ${group.name} set to its twin on the successor, in Slovakia`, () => {
+			const sk = PRODUCT_REDIRECTS.exact.sk ?? {};
+			const retired = Object.keys(sk).filter((from) => from.includes(group.from));
+			expect(retired, group.name).toHaveLength(group.count);
+			for (const from of retired) expect(sk[from], from).toBe(from.replace(group.from, group.to));
+		});
+	}
+
+	it("names no other market: the 21 sets are public only in sk-eur", () => {
+		for (const [market, slugs] of Object.entries(PRODUCT_REDIRECTS.exact)) {
+			if (market === "sk") continue;
+			for (const from of Object.keys(slugs)) {
+				for (const group of groups) expect(from, `${market} ${from}`).not.toContain(group.from);
+			}
+		}
+	});
+});
+
 describe("productRedirectTarget", () => {
 	it("answers per market and returns null for what is not retired", () => {
 		setProductRedirectsForTests({ sk: { old: "new" } });

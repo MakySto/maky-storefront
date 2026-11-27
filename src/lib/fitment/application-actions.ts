@@ -13,7 +13,13 @@
 
 import { loadFitmentDataset } from "./provider";
 import { collectApplicationsForProduct } from "./resolve";
-import { type FitmentApplication, type FitmentProductRef, vehicleNodeName } from "./contract";
+import {
+	type FitmentApplication,
+	type FitmentProductRef,
+	type VehicleGeneration,
+	vehicleNodeName,
+	windowWithinProduction,
+} from "./contract";
 import { pickConditionText } from "./conditions";
 import {
 	APPLICATIONS_PAGE_SIZE,
@@ -45,7 +51,10 @@ function toRow(
 	/** This product's own row inside the application. Status is never the group's. */
 	ref: FitmentProductRef | undefined,
 	locale: string | undefined,
+	/** The car's years of production: the years printed are the set's as far as the car was built. */
+	production: Pick<VehicleGeneration, "productionYearFrom" | "productionYearTo">,
 ): ApplicationRow {
+	const window = windowWithinProduction(application.window, production);
 	return {
 		applicationId: application.applicationId,
 		makeName: names.make,
@@ -53,8 +62,8 @@ function toRow(
 		generationName: names.generation,
 		// Years only. This list answers "which cars is this for?", where a month would be
 		// noise; the month matters where it decides a purchase, and that is the resolver.
-		yearFrom: application.window.from.year,
-		yearTo: application.window.to?.year ?? null,
+		yearFrom: window.from.year,
+		yearTo: window.to?.year ?? null,
 		roofTypes: application.qualifiers.roofTypes ?? null,
 		bodyTypes: application.qualifiers.bodyTypes ?? null,
 		doors: application.qualifiers.doors ?? null,
@@ -107,6 +116,7 @@ export async function listProductApplications(
 				},
 				application.products.find((p) => p.saleorProductId === saleorProductId),
 				options.locale,
+				generation,
 			),
 		);
 	}

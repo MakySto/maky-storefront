@@ -107,6 +107,29 @@ describe("after CFM has renamed or folded the product", () => {
 		expect(res.headers.get("location")).toBe(`https://maky.store/sk/${NEW}`);
 	});
 
+	// CFM does not delete or rename the 21 duplicated sets of the fitment list of 2026-11-30: it unpublishes them in sk-eur
+	// (isPublished false, visibleInListings false) and the slug stays in Saleor. That is enough because the gate asks as
+	// a shopper does, without a token and in the market's channel, and Saleor answers such a question with null for a
+	// product that is not published there.
+	it("asks Saleor as a shopper in the market's channel, so a product only unpublished there counts as gone", async () => {
+		setProductRedirectsForTests(null);
+		const old = "stresny-nosic-green-valley-edge-skoda-kamiq-nw4-2023-klasicke-lyziny";
+		const twin = "stresny-nosic-green-valley-edge-skoda-kamiq-nw-2019-klasicke-lyziny";
+		const fetchMock = saleorKnowing([twin]);
+		vi.stubGlobal("fetch", fetchMock);
+
+		const res = await proxy(req(`/sk/${old}`));
+
+		expect(res.status).toBe(301);
+		expect(new URL(res.headers.get("location")!).pathname).toBe(`/sk/${twin}`);
+		expect(fetchMock).toHaveBeenCalled();
+		for (const [, init] of fetchMock.mock.calls) {
+			const headers = new Headers(init?.headers);
+			expect(headers.get("authorization")).toBeNull();
+			expect((JSON.parse(String(init?.body)) as { variables: { c?: string } }).variables.c).toBe("sk-eur");
+		}
+	});
+
 	it("never redirects the replacement itself", async () => {
 		vi.stubGlobal("fetch", saleorKnowing([NEW]));
 

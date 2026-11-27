@@ -103,3 +103,21 @@ CFM withdraws the four pages, and are best live before the candidate is approved
 answers not-found. The 21 duplicated products are redirected from `product-redirects.json` (old slug to the kept
 slug, per market; `scripts/ops/product-redirects-from-table.mjs`) and need CFM's table of pairs; the proxy redirects
 only when Saleor says the old slug is gone and the new one exists, so the table can be deployed before CFM withdraws them.
+
+**The 21 duplicated sets (CFM's table, 27. 11. 2026).** `karty-presmerovania-20261127.csv` (sha256 `5c56ce6f…1896`,
+columns `trh,stary_slug,novy_slug`, all `sk-eur`): 8 Patriot MK to MK74, 9 Kamiq NW4 to NW, 4 Mazda 3 Hatchback to BL,
+merged into `product-redirects.json` (release `…+zoznam-aut-20261130`, the script now takes a channel slug in the market
+column and `--merge`s into what the file holds). CFM unpublishes the old sets in sk-eur (`isPublished` and
+`visibleInListings` false) and keeps the slug. That is enough: the proxy asks Saleor without a token and in the market's
+channel, as a shopper does, and Saleor answers null for a product not published there
+(`proxy.product-redirects.test.ts`). The old address then answers 301 to the twin as soon as the product event reaches
+`/api/revalidate`, and within the 5 minutes an existence answer is kept at the latest.
+
+**Years of a set are the window as far as the car was built.** CFM keeps a set maker's window when it moves a
+generation's years (point 4 of its reply, 27. 11. 2026). The decision already answered as the intersection would (the
+selector and the garage accept only years of production, and for those the two windows answer alike:
+`production-window.test.ts`), but the product page, the "Pre ktoré vozidlá" list and every card printed the window as
+given: a Santa Fe TM built until 2023 with a Thule window 2021-2024 (59 such rows in the export of 2026-10-22), and
+after this list "od 2018" for a Q3 F3 that ends in 2025. They now print `windowWithinProduction` (`contract.ts`): cut
+to the years of production, never widened, a cut boundary without its month. A window that shares no year with its car
+is printed as given and is a data fault the validator reports.
