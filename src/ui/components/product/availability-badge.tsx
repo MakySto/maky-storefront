@@ -47,7 +47,7 @@ export type AvailabilityInput = {
 };
 
 /** The `common.*` keys this badge can ask for. */
-export type AvailabilityKey = "inStock" | "onDemand" | "onDemandShort" | "outOfStock";
+export type AvailabilityKey = "inStock" | "onDemand" | "onDemandShort" | "outOfStock" | "lastPiece";
 
 type Resolved =
 	| { key: "inStock"; tone: "success" }
@@ -76,6 +76,21 @@ export function resolveAvailability({
 		return { key: "onDemand", tone: "info" };
 	}
 	return null;
+}
+
+/**
+ * Whether exactly one piece is left of a variant whose stock Saleor really counts.
+ *
+ * The product page's quantity control takes its ceiling from the same number, so at one piece both
+ * of its buttons are switched off, and beside a badge that said only "Skladom" nothing told the
+ * customer why (audit of the live store, 2026-11-27). The detailed badge says it in its second line.
+ *
+ * Tracked variants only. For an untracked one `quantityAvailable` is Saleor's checkout cap, not
+ * stock, and a cap of one would not be a last piece. No other count is ever stated: "one left" is
+ * the single figure that explains something on the page, and it is true by construction.
+ */
+export function isLastPiece({ trackInventory, quantityAvailable }: AvailabilityInput): boolean {
+	return trackInventory === true && quantityAvailable === 1;
 }
 
 /**
@@ -111,6 +126,7 @@ export function AvailabilityBadge({
 	 * The product page's two lines, as the approved buy box draws them: an icon, the state in
 	 * bold, and under it the lead time. The lead time is the rest of the market's own `onDemand`
 	 * line after its short form — never a second copy of the figure that could drift from it.
+	 * An in-stock variant with one piece left says so in the same second line (`isLastPiece`).
 	 */
 	detailed?: boolean;
 }) {
@@ -125,7 +141,9 @@ export function AvailabilityBadge({
 		const rest =
 			resolved.key === "onDemand" && full.startsWith(head)
 				? full.slice(head.length).replace(/^[\s,–-]+/, "")
-				: "";
+				: resolved.key === "inStock" && isLastPiece(input)
+					? label("lastPiece")
+					: "";
 		const Icon =
 			resolved.tone === "success" ? CircleCheckIcon : resolved.tone === "info" ? Clock3Icon : CircleSlashIcon;
 		return (

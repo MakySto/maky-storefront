@@ -46,6 +46,7 @@ import {
 import { isSourceLocale } from "@/lib/saleor/exact-locale";
 import { productJsonLdOptions } from "@/lib/seo/product-jsonld-options";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
+import { KeepTogether } from "@/ui/components/ui/keep-together";
 
 // ============================================================================
 // Data
@@ -330,7 +331,8 @@ async function ProductContent({
 								"leading-[1.1]",
 							)}
 						>
-							{product.name}
+							{/* "CX-60" and "T-Roc" stay on one line: the heading wrapped inside them. */}
+							<KeepTogether text={product.name} />
 						</h1>
 						{/* The product's own short summary from the catalogue — its SEO description,
 						    written per product — never a slogan made up for the page. */}

@@ -4,6 +4,7 @@ import { type FC } from "react";
 import { useTranslations } from "next-intl";
 import { type AddressFragment } from "@/checkout/graphql";
 import { cn } from "@/lib/utils";
+import { cityLine } from "@/lib/address-city-line";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
 import { useLocale } from "@/providers/locale-provider";
 
@@ -71,10 +72,7 @@ export const AddressDisplay: FC<AddressDisplayProps> = ({ address, title, classN
 				{address.companyName && <p>{address.companyName}</p>}
 				<p>{address.streetAddress1}</p>
 				{address.streetAddress2 && <p>{address.streetAddress2}</p>}
-				<p>
-					{address.city}
-					{address.countryArea && `, ${address.countryArea}`} {address.postalCode}
-				</p>
+				<p>{cityLine(address)}</p>
 				<p>{localizeCountryName(address.country?.code, address.country?.country, locale)}</p>
 				{address.phone && <p>{address.phone}</p>}
 			</div>

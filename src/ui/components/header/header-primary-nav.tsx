@@ -1,6 +1,6 @@
 import { getLocaleFromChannel } from "@/config/locale";
 import { getTranslations } from "next-intl/server";
-import { HEADER_CATEGORY_NAV, HEADER_UTILITY_NAV, localizedNavHref } from "./header.config";
+import { HEADER_CATEGORY_NAV, HEADER_UTILITY_NAV, marketNavHref } from "./header.config";
 import { HeaderNavLink } from "./header-nav-link";
 import { NavOverflowRow } from "./nav-overflow-row";
 import { visibleNavLinks } from "@/lib/cms/availability";
@@ -31,14 +31,14 @@ export async function HeaderPrimaryNav({ channel }: { channel: string }) {
 		<nav aria-label={tAccount("primaryNavigation")} className="hidden h-full min-w-0 flex-1 lg:flex">
 			<NavOverflowRow className="flex h-full min-w-0 flex-1 flex-wrap items-stretch overflow-hidden">
 				{categories.map((item) => (
-					<HeaderNavLink key={item.key} href={localizedNavHref(channel, item.href)}>
+					<HeaderNavLink key={item.key} href={marketNavHref(channel, item.href)}>
 						{t(item.key)}
 					</HeaderNavLink>
 				))}
 				{utility.map((item, index) => (
 					<HeaderNavLink
 						key={item.key}
-						href={localizedNavHref(channel, item.href)}
+						href={marketNavHref(channel, item.href)}
 						// The short rule before the secondary links belongs to the FIRST of them, not to
 						// a box of its own: when that link gives way, the rule goes with it and never
 						// stands alone at the end of the row.
