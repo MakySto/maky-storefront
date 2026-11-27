@@ -6,7 +6,9 @@
  * roof it was for). Only a roof the shopper CONFIRMED is named: an unconfirmed one is not a fact about the car.
  *
  * The line is cut at the end when the button is too narrow, so the order is the order of importance: the roof,
- * the tyre size, and last the word that only repeats what the button is.
+ * the tyre size, and last the word that only repeats what the button is. With a roof AND a tyre size the word
+ * is left out: on the live header it never fitted and showed as "Zme…" (2026-11-27), and the button is the
+ * way to change either without saying so.
  *
  * Pure, with the words passed in: the launcher translates, and the tests need no translator.
  */
@@ -29,6 +31,6 @@ export function launcherHint(
 ): string {
 	const { car, roof, size } = chosen;
 	if (!car) return size ? words.changeShort : words.selectVehicleHint;
-	if (roof) return [roof, size, words.changeShort].filter(Boolean).join(SEPARATOR);
+	if (roof) return [roof, size ?? words.changeShort].join(SEPARATOR);
 	return size ? words.sizeHint(size) : words.changeVehicle;
 }

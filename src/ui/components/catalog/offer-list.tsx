@@ -16,6 +16,7 @@ import { type SetVehicle } from "@/lib/fitment/set-vehicle";
 import { cn } from "@/lib/utils";
 import { brandKey, vehicleViewQuery, type VehicleView } from "@/lib/fitment/vehicle-view";
 import { OfferCard, type OfferCardLabels } from "./offer-card";
+import { OfferViewBusy, OfferViewLink } from "./offer-view-navigation";
 import { OfferViewSelect } from "./offer-view-select";
 
 /**
@@ -426,36 +427,34 @@ export async function CatalogOfferList({
 						aria-label={tl("roofFilterLabel")}
 						className="scrollbar-hide -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 py-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
 					>
-						<Link
+						<OfferViewLink
 							href={hrefFor({ roof: null, brand: brandUnder(null) })}
-							scroll={false}
-							prefetch={false}
-							aria-current={active === null ? "true" : undefined}
+							current={active === null}
 							className={chip(active === null)}
 						>
 							{tl("roofFilterAll")}
 							<span className="text-[0.8125rem] font-medium tabular-nums opacity-80">{sorted.length}</span>
-						</Link>
+						</OfferViewLink>
 						{roofChips.map((group) => (
-							<Link
+							<OfferViewLink
 								key={group.key}
 								href={hrefFor({ roof: group.key as RoofType, brand: brandUnder(group.key as RoofType) })}
-								scroll={false}
-								prefetch={false}
-								aria-current={active === group.key ? "true" : undefined}
+								current={active === group.key}
 								className={chip(active === group.key)}
 							>
 								{group.label}
 								<span className="text-[0.8125rem] font-medium tabular-nums opacity-80">{group.count}</span>
-							</Link>
+							</OfferViewLink>
 						))}
 					</nav>
 				) : null}
 
 				{shown.length > 0 ? (
-					<ul className={`${CARD_GRID} mt-4`}>
-						{shown.map((row, index) => card(row.offer, index === 0, direct))}
-					</ul>
+					<OfferViewBusy>
+						<ul className={`${CARD_GRID} mt-4`}>
+							{shown.map((row, index) => card(row.offer, index === 0, direct))}
+						</ul>
+					</OfferViewBusy>
 				) : (
 					// The roof the address names has no set here (for this year). Said in those words, with
 					// the other roofs and their counts one row above, never as "nothing fits your car".

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { MapPin, ChevronRight, Check } from "lucide-react";
 import { type AddressFragment } from "@/checkout/graphql";
 import { cn } from "@/lib/utils";
+import { cityLine } from "@/lib/address-city-line";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
 import { useLocale } from "@/providers/locale-provider";
 
@@ -85,7 +86,7 @@ export const AddressCard: FC<AddressCardProps> = ({
 
 				{compact ? (
 					<p className="text-muted-foreground mt-0.5 truncate text-sm">
-						{address.streetAddress1}, {address.city} {address.postalCode}
+						{[address.streetAddress1, cityLine(address)].filter(Boolean).join(", ")}
 					</p>
 				) : (
 					<>
@@ -93,10 +94,7 @@ export const AddressCard: FC<AddressCardProps> = ({
 							{address.streetAddress1}
 							{address.streetAddress2 && `, ${address.streetAddress2}`}
 						</p>
-						<p className="text-muted-foreground text-sm">
-							{address.city}
-							{address.countryArea && `, ${address.countryArea}`} {address.postalCode}
-						</p>
+						<p className="text-muted-foreground text-sm">{cityLine(address)}</p>
 						<p className="text-muted-foreground text-sm">
 							{localizeCountryName(address.country?.code, address.country?.country, locale)}
 						</p>
