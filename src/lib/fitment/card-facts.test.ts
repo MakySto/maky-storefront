@@ -179,7 +179,7 @@ describe("attachSetFacts with a set made for one car in several versions", () =>
 		const dataset = n15060Dataset();
 		addWindow(dataset, 2023, null);
 		const result = await attach(dataset);
-		expect(result.fit).toEqual({ roof: "Integrované pozdĺžniky", years: "2008 – 2015, od 2023" });
+		expect(result.fit).toEqual({ roof: "Integrované lyžiny", years: "2008 – 2015, od 2023" });
 		expect(result.setTitle).toEqual({ model: "Nordrive Helio Black", vehicle: "AUDI A4 Avant B8" });
 	});
 
@@ -236,7 +236,7 @@ describe("attachSetFacts", () => {
 	it("puts the set's own facts on its card", async () => {
 		const result = await attach(n15060Dataset());
 		expect(result.specs?.map((s) => s.label)).toContain("Materiál");
-		expect(result.fit).toEqual({ roof: "Integrované pozdĺžniky", years: "2008 – 2015" });
+		expect(result.fit).toEqual({ roof: "Integrované lyžiny", years: "2008 – 2015" });
 	});
 
 	it("names the car the way the dataset does, in the market's language, once", async () => {

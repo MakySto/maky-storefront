@@ -156,9 +156,9 @@ async function validateSelection(
 	//
 	// Unanswered now stores nothing. The resolver reports that it cannot confirm, which
 	// is true, and the shopper is asked rather than told.
-	// The SAME list the selector offered. Validating against the generation's list alone
-	// would refuse a roof that only an application knows about — a roof the shopper was
-	// shown and legitimately picked.
+	// Every roof the selector can offer for this generation (it shows the ones a set is on offer
+	// for in the chosen year). Validating against the generation's list alone would refuse a roof
+	// that only an application knows about — a roof the shopper was shown and legitimately picked.
 	const roof = resolveRoofAnswer(roofOptionsFor(dataset, generation), selection.roofType);
 	if (roof === "invalid") return { ok: false, error: "invalid-qualifier" };
 	if (roof !== undefined) normalized.roofType = roof;

@@ -50,7 +50,7 @@ function load(path: string): FitmentDataset {
 	return result.dataset;
 }
 
-/** Roof words, Slovak, as the intros use them. The selector's labels differ ("pozdĺžniky"). */
+/** Roof words, Slovak, as the intros use them. The older forms ("pozdĺžniky", "holá strecha") are accepted too. */
 const ROOF_WORDS: Record<RoofType, RegExp> = {
 	"flush-rails": /integrovan\p{L}*\s+(lyžin|lyžín|pozdĺžnik)/iu,
 	"raised-rails": /(klasick\p{L}*\s+(lyžin|lyžín|pozdĺžnik)|pozdĺžnik\p{L}*\s+nad\s+strechou)/iu,

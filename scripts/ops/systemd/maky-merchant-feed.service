@@ -31,13 +31,17 @@ WorkingDirectory=/opt/storefront
 # A deploy that starts during a run stops the shop under it: the steps fail, and last night's files stay.
 ExecCondition=/usr/bin/flock -n /run/lock/maky-storefront-deploy.lock -c true
 
-# Slovakia only: the pilot. A market is added here when its feed has been looked at (a dry run names
-# what it would write and what it leaves out) and Merchant Center has delivery set up for its country.
+# All twelve markets, the pilot first. Merchant Center has delivery set for every foreign country (27 Nov)
+# and every item carries the variant's weight where Saleor has one. A market is read to its end before the
+# next starts, and one that cannot be read keeps its file of the night before without stopping the rest, so
+# a late market is the first to miss a night, never the pilot. Slovakia is about 540 steps; a foreign market
+# reads fewer products (those without a whole translation are skipped), so the whole run is an estimated
+# hour (not measured; the first run is watched), which is why the limit below is 150 minutes.
 #
 # The second lock is shared with maky-merchant-api.service, which walks the same catalogue every hour:
 # the two never walk it at once. The feed waits for an hourly run to end (it takes minutes); an hourly
 # run that finds the feed being written skips its turn.
-ExecStart=/usr/bin/flock -w 1800 /var/lib/maky-feeds/run.lock /usr/bin/env node scripts/ops/merchant-feed.mjs --markets sk --write
+ExecStart=/usr/bin/flock -w 1800 /var/lib/maky-feeds/run.lock /usr/bin/env node scripts/ops/merchant-feed.mjs --markets sk,cz,de,at,pl,hu,it,fr,es,ro,us,ca --write
 # /var/lib/maky-feeds, created for User=ubuntu and readable by the shop, which runs as ubuntu too.
 StateDirectory=maky-feeds
 StateDirectoryMode=0755
@@ -46,5 +50,5 @@ StateDirectoryMode=0755
 Nice=15
 MemoryMax=512M
 MemorySwapMax=0
-TimeoutStartSec=90min
+TimeoutStartSec=150min
 NoNewPrivileges=yes

@@ -80,7 +80,7 @@ export function vehicleShortLabel(vehicle: VehicleSpec | null | undefined): stri
  * `roofConfirmed: false` is a real state and must be shown as one — "Typ strechy
  * nepotvrdený" with a way to fix it. It must never be filled in with a guess: the roof
  * decides which feet fit, and substituting the common one is precisely the error the
- * selector's "Iný typ" and "Neviem rozpoznať" answers exist to prevent.
+ * selector's "Pokračovať bez typu strechy" answer exists to prevent.
  *
  * The month appears only when the shopper stated it. An absent month is not "January".
  */

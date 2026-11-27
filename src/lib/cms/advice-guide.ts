@@ -82,6 +82,23 @@ export function adviceGuideFromBlocks(blocks: readonly CmsBlock[]): AdviceGuide 
 }
 
 /**
+ * The anchor of the guide's section on telling the roof types apart. The vehicle selector links to
+ * it from its roof question ("Neviem, aký typ strechy mám"), so the editor gives that section this
+ * anchor ID in the CMS and the link appears; rename it here and there together.
+ */
+export const ROOF_GUIDE_ANCHOR = "typ-strechy";
+
+/**
+ * Where the selector's "detailed guide" link goes: the roof section of this market's guide, or
+ * `null` when the guide has no such section. Never the guide as a whole: a link that promises how to
+ * recognise a roof and opens a page that does not say it is worse than no link.
+ */
+export function roofGuidePath(guide: AdviceGuide | null): string | null {
+	if (!guide?.topics.some((topic) => topic.anchor === ROOF_GUIDE_ANCHOR)) return null;
+	return `/${ADVICE_GUIDE_SLUG}#${ROOF_GUIDE_ANCHOR}`;
+}
+
+/**
  * This market's guide, or `null` where it is not published. A fault THROWS to the caller, so an
  * unreachable CMS is never taken for "no guide": the section falls back to its own words meanwhile.
  * Inside the cache it is a value instead, see `@/lib/cache-fault`.

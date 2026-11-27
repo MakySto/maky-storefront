@@ -22,7 +22,7 @@ import {
 	monthDecidesFor,
 	resolveGenerationForYear,
 	resolveSingleValued,
-	roofChoicesFor,
+	roofChoicesOnOffer,
 	variantAsked,
 	yearsForModel,
 	type GenerationCandidate,
@@ -116,7 +116,7 @@ export async function loadSelectorStep(input: {
 		models,
 		years,
 		generation,
-		qualifiers: qualifiersFor(dataset.applications, generation),
+		qualifiers: qualifiersFor(dataset.applications, generation, input.year),
 		monthDecides: monthDecidesFor(dataset.applications, generation.id, input.year),
 	};
 }
@@ -124,10 +124,13 @@ export async function loadSelectorStep(input: {
 function qualifiersFor(
 	applications: FitmentApplication[],
 	generation: GenerationCandidate,
+	year: number,
 ): SelectorQualifiers {
 	// The roof is never resolved by having one option, so it is never filled in and never
-	// dropped — it is returned whole and confirmed by the shopper every time.
-	const roofTypes = roofChoicesFor(applications, generation);
+	// dropped — it is confirmed by the shopper every time. The options are the roofs a set is on
+	// offer for in THIS year, not every roof the generation has a set for in some year: a Kuga of
+	// 2024 was offered the raised rails that only the 2019 and 2020 cars have sets for.
+	const roofTypes = roofChoicesOnOffer(applications, generation, year);
 	const body = resolveSingleValued(generation.bodyTypes);
 	const doors = resolveSingleValued(generation.doors);
 

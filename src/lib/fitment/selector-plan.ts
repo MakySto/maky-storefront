@@ -30,6 +30,9 @@
  */
 
 import {
+	CONFIGURATOR_PRODUCT_KIND,
+	isFitmentRefSellable,
+	matchWindow,
 	type BodyType,
 	type FitmentApplication,
 	type FitmentDataset,
@@ -176,6 +179,51 @@ export function roofChoicesFor(
 		for (const roof of app.qualifiers.roofTypes ?? []) seen.add(roof);
 	}
 	return [...seen];
+}
+
+/** The order the roofs are offered in: how often a shopper's roof is this one, roughly (as the listing groups them). */
+const ROOF_OFFER_ORDER: readonly RoofType[] = [
+	"raised-rails",
+	"flush-rails",
+	"naked-roof",
+	"fixpoint",
+	"t-track",
+	"rain-gutter",
+];
+
+/**
+ * The roof types the SELECTOR offers for a car of this year: the ones a set is on offer for.
+ *
+ * `roofChoicesFor` answers "which roofs does this generation come with, in any year". The selector
+ * used to offer that whole list, and it is how a Ford Kuga DFK of 2024 was offered raised rails: the
+ * generation has sets for them, but only for the cars built in 2019 and 2020. The shopper chose the
+ * roof, confirmed the car and met "we have no verified product for your car", next to a generation
+ * page listing 41 sets for it (owner, 2026-11-27: offer only the roofs we have sets for).
+ *
+ * A roof is offered when an application of this generation names it, is not a negative row, has a
+ * window the year is not outside of (`matchWindow`, the comparison the resolver makes; a boundary
+ * year whose month decides counts as inside, because that set is still shown) and holds a roof-rack
+ * set the source stands behind. The generation's own list is not added: it says what the car was
+ * sold with, and a roof nobody has a set for is a question whose every answer is "nothing".
+ *
+ * Empty means there is nothing to tell apart for this year, and the question is not asked.
+ */
+export function roofChoicesOnOffer(
+	applications: readonly FitmentApplication[],
+	generation: Pick<GenerationCandidate, "id">,
+	year: number,
+): RoofType[] {
+	const seen = new Set<RoofType>();
+	for (const app of applications) {
+		if (app.generationId !== generation.id || app.negative) continue;
+		if (matchWindow(app.window, year) === "out") continue;
+		if (
+			!app.products.some((ref) => ref.productKind === CONFIGURATOR_PRODUCT_KIND && isFitmentRefSellable(ref))
+		)
+			continue;
+		for (const roof of app.qualifiers.roofTypes ?? []) seen.add(roof);
+	}
+	return [...seen].sort((a, b) => ROOF_OFFER_ORDER.indexOf(a) - ROOF_OFFER_ORDER.indexOf(b));
 }
 
 /**
