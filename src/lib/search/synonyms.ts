@@ -14,10 +14,16 @@
  *
  * Keep it to words that MEAN the shelf. A word that is only often seen beside it ("auto", "Thule")
  * would put every product of the shelf into unrelated answers.
+ *
+ * And keep it to names that mean ONE shelf, because the words also decide which shelf a search
+ * names (`named-shelves.ts`). Left out for that reason: "strešák" (one ending away from the
+ * adjective in "strešný box"), "nosič na strechu" (a roof-mounted bike carrier is one too), and
+ * the Spanish and Romanian words for a luggage rack that are also the second word of their roof box
+ * ("cofre portaequipajes", "cutie portbagaj").
  */
 export const CATEGORY_SYNONYMS: Readonly<Record<string, Readonly<Record<string, readonly string[]>>>> = {
 	sk: {
-		"stresne-nosice": ["priečniky", "strešný nosič", "nosič na strechu", "hagusy", "strešák"],
+		"stresne-nosice": ["priečniky", "strešný nosič", "hagusy"],
 		"stresne-boxy": ["strešný box", "autobox", "box na strechu", "strešný kufor", "rakva"],
 		"nosice-bicyklov": [
 			"nosič bicyklov",
@@ -26,17 +32,30 @@ export const CATEGORY_SYNONYMS: Readonly<Record<string, Readonly<Record<string, 
 			"nosič na bajky",
 			"cyklonosič",
 		],
-		"nosice-lyzi": ["nosič lyží", "nosič na lyže", "nosič snowboardov", "lyžiarsky nosič"],
+		"nosice-lyzi": [
+			"nosič lyží",
+			"nosič na lyže",
+			"strešný nosič lyží",
+			"strešný nosič na lyže",
+			"nosič snowboardov",
+			"lyžiarsky nosič",
+		],
 		"snehove-retaze": ["snehové reťaze", "reťaze na kolesá", "snehové ponožky", "zimné reťaze"],
 		autochladnicky: ["autochladnička", "chladnička do auta", "chladiaci box", "kompresorová chladnička"],
 		"stresne-stany": ["strešný stan", "autostan", "stan na auto", "stan na strechu"],
 		"preprava-zvierat": ["klietka pre psa", "prepravka pre psa", "box pre psa", "klietka do auta"],
 	},
 	cs: {
-		"stresne-nosice": ["příčníky", "střešní nosič", "nosič na střechu", "zahrádka", "hagusy"],
+		"stresne-nosice": ["příčníky", "střešní nosič", "zahrádka", "hagusy"],
 		"stresne-boxy": ["střešní box", "autobox", "box na střechu", "střešní kufr", "rakev"],
 		"nosice-bicyklov": ["nosič kol", "nosič na kola", "nosič jízdních kol", "cyklonosič"],
-		"nosice-lyzi": ["nosič lyží", "nosič na lyže", "nosič snowboardů"],
+		"nosice-lyzi": [
+			"nosič lyží",
+			"nosič na lyže",
+			"střešní nosič lyží",
+			"střešní nosič na lyže",
+			"nosič snowboardů",
+		],
 		"snehove-retaze": ["sněhové řetězy", "řetězy na kola", "sněhové ponožky", "zimní řetězy"],
 		autochladnicky: [
 			"autochladnička",
@@ -121,7 +140,7 @@ export const CATEGORY_SYNONYMS: Readonly<Record<string, Readonly<Record<string, 
 		"preprava-zvierat": ["cage de transport chien", "caisse de transport chien"],
 	},
 	es: {
-		"stresne-nosice": ["barras de techo", "barras portaequipajes", "baca", "portaequipajes"],
+		"stresne-nosice": ["barras de techo", "barras portaequipajes", "baca"],
 		"stresne-boxy": ["cofre de techo", "baúl de techo", "cofre portaequipajes"],
 		"nosice-bicyklov": ["portabicicletas", "portabicis", "porta bicicletas"],
 		"nosice-lyzi": ["portaesquís", "porta esquís"],
@@ -131,7 +150,7 @@ export const CATEGORY_SYNONYMS: Readonly<Record<string, Readonly<Record<string, 
 		"preprava-zvierat": ["transportín perro", "jaula para perros"],
 	},
 	ro: {
-		"stresne-nosice": ["bare transversale", "bare portbagaj", "portbagaj", "bare plafon"],
+		"stresne-nosice": ["bare transversale", "bare portbagaj", "bare plafon"],
 		"stresne-boxy": ["cutie portbagaj", "cutie plafon", "cutie auto"],
 		"nosice-bicyklov": ["suport biciclete", "suport bicicleta", "suport bicicletă"],
 		"nosice-lyzi": ["suport schiuri", "suport ski"],

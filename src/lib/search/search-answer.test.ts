@@ -251,14 +251,10 @@ describe("a search that names a car", () => {
 		mocks.searchProducts
 			.mockResolvedValueOnce(NOTHING)
 			.mockResolvedValueOnce(saleorFinds(260, { next: "abc" }));
-		const answer = await answerSearch({
-			query: "Dachträger Golf",
-			channel: "de-eur",
-			namedShelves: ["stresne-nosice"],
-		});
+		const answer = await answerSearch({ query: "Montagekit Golf", channel: "de-eur" });
 
 		expect(answer.vehicles.map((vehicle) => vehicle.id)).toEqual(["md:golf"]);
-		expect(saleorQueries()).toEqual(["Dachträger Golf", "Golf"]);
+		expect(saleorQueries()).toEqual(["Montagekit Golf", "Golf"]);
 		expect(answer.shownQuery).toBe("Golf");
 		expect(answer.note).toBe("closest");
 		expect(answer.result.pagination.nextCursor).toBe("v.abc");
@@ -266,13 +262,88 @@ describe("a search that names a car", () => {
 		// And its second page asks for the car alone again, with Saleor's own cursor.
 		mocks.searchProducts.mockResolvedValueOnce(saleorFinds(260));
 		await answerSearch({
-			query: "Dachträger Golf",
+			query: "Montagekit Golf",
 			channel: "de-eur",
-			namedShelves: ["stresne-nosice"],
 			cursor: "v.abc",
 			direction: "forward",
 		});
 		expect(mocks.searchProducts.mock.calls.at(-1)![0]).toMatchObject({ query: "Golf", cursor: "abc" });
+	});
+
+	// Live on 2026-11-27: "Dachträger Golf" listed the Golf's 260 sets under "Ergebnisse für „Golf“"
+	// and the sentence that nothing matched exactly, although the sets are what was asked for.
+	it("asks Saleor for the sets without the roof racks' name in the market's language", async () => {
+		mocks.readShelfIndex.mockResolvedValue(buildShelfIndex(sampleShelf("de"), "de"));
+		mocks.searchProducts
+			.mockResolvedValueOnce(NOTHING)
+			.mockResolvedValueOnce(saleorFinds(167, { next: "abc" }));
+		const request = {
+			query: "Dachträger Thule Golf",
+			channel: "de-eur",
+			namedShelves: ["stresne-nosice"],
+			roofRackWords: ["dachtrager"],
+		};
+		const answer = await answerSearch(request);
+
+		expect(saleorQueries()).toEqual(["Dachträger Thule Golf", "Thule Golf"]);
+		expect(answer.vehicles.map((vehicle) => vehicle.id)).toEqual(["md:golf"]);
+		// Thule roof racks for a Golf are what was asked for: no note, and the words as typed.
+		expect(answer.note).toBeNull();
+		expect(answer.shownQuery).toBe("Dachträger Thule Golf");
+		expect(answer.result.pagination.nextCursor).toBe("r.abc");
+
+		mocks.searchProducts.mockResolvedValueOnce(saleorFinds(167));
+		await answerSearch({ ...request, cursor: "r.abc", direction: "forward" });
+		expect(mocks.searchProducts.mock.calls.at(-1)![0]).toMatchObject({ query: "Thule Golf", cursor: "abc" });
+	});
+
+	it("answers the roof racks of a maker with Saleor's sets, with no car named", async () => {
+		mocks.readShelfIndex.mockResolvedValue(buildShelfIndex(sampleShelf("de"), "de"));
+		mocks.searchProducts.mockResolvedValueOnce(NOTHING).mockResolvedValueOnce(saleorFinds(11968));
+		const answer = await answerSearch({
+			query: "Dachträger Thule",
+			channel: "de-eur",
+			namedShelves: ["stresne-nosice"],
+			roofRackWords: ["dachtrager"],
+		});
+
+		expect(saleorQueries()).toEqual(["Dachträger Thule", "Thule"]);
+		expect(answer.note).toBeNull();
+		expect(answer.result.pagination.totalCount).toBe(11968);
+		// The sets are still chosen by car.
+		expect(answer.askForVehicle).toBe(true);
+	});
+
+	// Live on 2026-11-27: "strešný nosič thule" listed three bike carriers "na strešný nosič Thule"
+	// and none of the maker's twelve thousand sets.
+	it("does not answer the roof racks of a maker with another shelf's products", async () => {
+		mocks.searchProducts.mockResolvedValueOnce(saleorFinds(431));
+		const answer = await answerSearch({
+			query: "strešný nosič peruzzo",
+			channel: "sk-eur",
+			namedShelves: ["stresne-nosice"],
+			roofRackWords: ["stresny", "nosic"],
+		});
+
+		// The shelf holds "Nosič bicykla na strešný nosič Peruzzo…", every word of it; it is not a roof rack.
+		expect(saleorQueries()).toEqual(["strešný nosič peruzzo"]);
+		expect(answer.result.pagination.totalCount).toBe(431);
+	});
+
+	it("reads a maker beside a car as whose sets, and a part's name as the part", async () => {
+		// The kits carry "Nordrive" in their name: that says whose roof rack, not that a kit is wanted.
+		mocks.searchProducts.mockResolvedValueOnce(saleorFinds(31));
+		const sets = await answerSearch({ query: "nordrive octavia", channel: "sk-eur" });
+		expect(saleorQueries()).toEqual(["nordrive octavia"]);
+		expect(sets.result.pagination.totalCount).toBe(31);
+
+		mocks.searchProducts.mockClear();
+		const kits = await answerSearch({ query: "kit nordrive octavia", channel: "sk-eur" });
+		expect(mocks.searchProducts).not.toHaveBeenCalled();
+		expect(kits.result.products.map((product) => product.name)).toEqual([
+			"Montážny kit Nordrive C041 pre Škoda Octavia 1Z - (N21041)",
+			"Montážny kit Nordrive C238 pre Škoda Octavia NX - (N21238)",
+		]);
 	});
 
 	it("leaves the car out when the words name another shelf", async () => {
@@ -296,6 +367,72 @@ describe("a search that names a car", () => {
 		});
 		expect(answer.askForVehicle).toBe(true);
 		expect(answer.vehicles).toEqual([]);
+	});
+
+	it("does not offer to choose a car when another shelf is named beside the roof racks", async () => {
+		const answer = await answerSearch({
+			query: "nosič bicyklov na strešný nosič",
+			channel: "sk-eur",
+			namedShelves: ["nosice-bicyklov", "stresne-nosice"],
+		});
+		expect(answer.askForVehicle).toBe(false);
+	});
+
+	it("reads the roof racks named beside another shelf as what the other thing is carried on", async () => {
+		const answer = await answerSearch({
+			query: "nosič bicykla na strešný nosič octavia",
+			channel: "sk-eur",
+			namedShelves: ["stresne-nosice", "nosice-bicyklov"],
+			roofRackWords: ["stresny", "nosic"],
+		});
+
+		// A bike carrier that goes on a roof rack: not the Octavia's roof racks, and no page of theirs.
+		expect(answer.vehicles).toEqual([]);
+		expect(answer.askForVehicle).toBe(false);
+		expect(mocks.searchProducts).not.toHaveBeenCalled();
+		expect(answer.result.products[0]!.name).toBe("Nosič bicykla na strešný nosič Peruzzo PureInstinct 710");
+	});
+
+	// Live on 2026-11-27: "octavia" listed the two fitting kits the shelf holds for it, found by
+	// their category, where Saleor has the car's sets.
+	it("answers a car alone with Saleor's sets, not with the kits the shelf holds for it", async () => {
+		mocks.searchProducts.mockResolvedValueOnce(saleorFinds(412, { next: "abc" }));
+		const answer = await answerSearch({ query: "octavia", channel: "sk-eur" });
+
+		expect(saleorQueries()).toEqual(["octavia"]);
+		expect(answer.vehicles.map((vehicle) => vehicle.id)).toEqual(["md:octavia"]);
+		expect(answer.result.pagination.totalCount).toBe(412);
+		expect(answer.result.pagination.nextCursor).toBe("f.abc");
+		expect(answer.note).toBeNull();
+	});
+
+	it("answers the roof racks for a car with Saleor's sets too", async () => {
+		mocks.searchProducts.mockResolvedValueOnce(saleorFinds(412));
+		const answer = await answerSearch({
+			query: "strešný nosič octavia",
+			channel: "sk-eur",
+			namedShelves: ["stresne-nosice"],
+		});
+
+		// The kits are "parts of roof racks" by category; their names do not say "strešný nosič".
+		expect(saleorQueries()).toEqual(["strešný nosič octavia"]);
+		expect(answer.result.pagination.totalCount).toBe(412);
+	});
+
+	it("lists what the shelf holds for the car when Saleor has no set for it, on every page", async () => {
+		const answer = await answerSearch({ query: "octavia", channel: "sk-eur" });
+
+		expect(saleorQueries()).toEqual(["octavia"]);
+		expect(answer.result.products.map((product) => product.name)).toEqual([
+			"Montážny kit Nordrive C041 pre Škoda Octavia 1Z - (N21041)",
+			"Montážny kit Nordrive C238 pre Škoda Octavia NX - (N21238)",
+		]);
+
+		// A later page of that answer does not ask Saleor again and finds the same products.
+		mocks.searchProducts.mockClear();
+		const again = await answerSearch({ query: "octavia", channel: "sk-eur", cursor: "shelf.0" });
+		expect(mocks.searchProducts).not.toHaveBeenCalled();
+		expect(again.result.products).toHaveLength(2);
 	});
 
 	it("still answers when the car names cannot be read", async () => {

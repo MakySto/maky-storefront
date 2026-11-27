@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { sampleShelf } from "./__fixtures__/shelf-sample";
-import { buildShelfIndex, searchShelf, sortShelfHits } from "./shelf-index";
+import { buildShelfIndex, nameCarries, searchShelf, sortShelfHits } from "./shelf-index";
 
 /**
  * Ranked on a sample of the live shelf (`__fixtures__/shelf-sample.ts`). Each case is a search
@@ -111,6 +111,18 @@ describe("the Slovak shelf", () => {
 			preferRoots: new Set(["stresne-boxy"]),
 		});
 		expect(named.hits).toEqual([]);
+	});
+
+	it("tells a product named by the words from one found by its category", () => {
+		const kit = sk.docs.find((doc) => doc.name.startsWith("Montážny kit Nordrive C041"))!;
+		// Found by "nosič" through its category (parts of roof racks), but not called one.
+		expect(searchShelf(sk, "nosič octavia").hits.map((hit) => hit.doc.id)).toContain(kit.id);
+		expect(nameCarries(kit, ["nosic"], "sk")).toBe(false);
+		expect(nameCarries(kit, ["kit"], "sk")).toBe(true);
+		expect(nameCarries(kit, ["montazne", "kity"], "sk")).toBe(true);
+		// By its code, with or without the brackets the name prints it in.
+		expect(nameCarries(kit, ["n21041"], "sk")).toBe(true);
+		expect(nameCarries(kit, ["n21050"], "sk")).toBe(false);
 	});
 
 	it("orders by price, name and date when the shopper asks", () => {
