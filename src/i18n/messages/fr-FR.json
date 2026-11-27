@@ -334,6 +334,7 @@
 			"roofSkipNote": "Sans le type de toit, nous ne pouvons pas confirmer la compatibilité. Vous pouvez l'ajouter à tout moment.",
 			"roofMissing": "Votre type de toit n'est pas proposé ? Pour ce véhicule et cette année, nous n'avons des barres que pour les types indiqués.",
 			"roofMissingContact": "Écrivez-nous, nous vérifierons.",
+			"yearNoSet": "Pour l'année {year}, nous n'avons pas encore d'ensemble de barres de toit pour ce véhicule.",
 			"glassRoofLegend": "Votre voiture a-t-elle un toit vitré (panoramique) ?",
 			"glassRoofHelp": "Les kits diffèrent selon que le toit comporte ou non un panneau en verre. Regardez le toit de votre voiture de l’extérieur ou de l’intérieur.",
 			"glassRoofYes": "Oui, elle a un toit vitré",

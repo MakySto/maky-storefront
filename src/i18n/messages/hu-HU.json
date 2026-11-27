@@ -334,6 +334,7 @@
 			"roofSkipNote": "Tetőtípus nélkül nem tudjuk megerősíteni a kompatibilitást. Bármikor megadhatja később.",
 			"roofMissing": "Nem találja a tetőtípusát? Ehhez az autóhoz és évjárathoz csak a felsorolt típusokhoz van csomagtartónk.",
 			"roofMissingContact": "Írjon nekünk, ellenőrizzük.",
+			"yearNoSet": "A {year}. évhez ehhez a járműhöz még nincs tetőcsomagtartó-szettünk.",
 			"glassRoofLegend": "Van az autójának üvegteteje (panorámatető)?",
 			"glassRoofHelp": "A készletek attól függnek, hogy van-e a tetőn üvegelem. Nézze meg az autó tetejét kívülről vagy belülről.",
 			"glassRoofYes": "Igen, van üvegteteje",

@@ -334,6 +334,7 @@
 			"roofSkipNote": "Bez typu dachu nie potwierdzimy kompatybilności. Możesz go uzupełnić w każdej chwili.",
 			"roofMissing": "Nie ma tu Twojego typu dachu? Dla tego auta i rocznika mamy bagażniki tylko do podanych typów.",
 			"roofMissingContact": "Napisz do nas, sprawdzimy.",
+			"yearNoSet": "Dla rocznika {year} nie mamy jeszcze zestawu bagażnika dachowego do tego pojazdu.",
 			"glassRoofLegend": "Czy Twoje auto ma szklany (panoramiczny) dach?",
 			"glassRoofHelp": "Zestawy różnią się zależnie od tego, czy w dachu jest szklany panel. Spójrz na dach auta z zewnątrz lub od środka.",
 			"glassRoofYes": "Tak, ma szklany dach",

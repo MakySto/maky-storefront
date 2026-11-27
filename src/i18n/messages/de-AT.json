@@ -334,6 +334,7 @@
 			"roofSkipNote": "Ohne Dachtyp können wir die Kompatibilität nicht bestätigen. Sie können ihn jederzeit ergänzen.",
 			"roofMissing": "Ihr Dachtyp ist nicht dabei? Für dieses Fahrzeug und Baujahr haben wir Träger nur für die genannten Typen.",
 			"roofMissingContact": "Schreiben Sie uns, wir prüfen es.",
+			"yearNoSet": "Für das Baujahr {year} haben wir für dieses Fahrzeug noch kein Dachträger-Set.",
 			"glassRoofLegend": "Hat Ihr Fahrzeug ein Glasdach (Panoramadach)?",
 			"glassRoofHelp": "Die Sets unterscheiden sich danach, ob im Dach ein Glaselement sitzt. Schauen Sie von außen oder von innen auf das Dach Ihres Fahrzeugs.",
 			"glassRoofYes": "Ja, mit Glasdach",

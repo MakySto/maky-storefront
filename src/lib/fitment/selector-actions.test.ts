@@ -122,6 +122,14 @@ describe("the roof type is confirmed EVERY time", () => {
 		expect(step.generation?.id).toBe("skoda-kodiaq-1");
 		expect(step.qualifiers?.roofTypes).toBeNull();
 	});
+
+	it("says when the year has no set at all, so the selector can tell the shopper before they confirm", async () => {
+		// The same Kodiaq: nothing sellable for 2019. The BMW 3 of 2022 has sets, so nothing is said.
+		const none = await loadSelectorStep({ makeId: "skoda", modelId: "skoda-kodiaq", year: 2019 });
+		expect(none.qualifiers?.noSetForYear).toBe(true);
+		const some = await loadSelectorStep({ makeId: "bmw", modelId: "bmw-3", year: 2022 });
+		expect(some.qualifiers?.noSetForYear).toBe(false);
+	});
 });
 
 describe("qualifiers the generation itself settles are FILLED IN, not dropped", () => {

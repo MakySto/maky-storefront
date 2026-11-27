@@ -334,6 +334,7 @@
 			"roofSkipNote": "Without the roof type we cannot confirm compatibility. You can add it at any time.",
 			"roofMissing": "Is your roof type not listed? For this car and year we only have racks for the types shown.",
 			"roofMissingContact": "Contact us and we will check.",
+			"yearNoSet": "We don't have a roof rack set for this vehicle for the year {year} yet.",
 			"glassRoofLegend": "Does your car have a glass (panoramic) roof?",
 			"glassRoofHelp": "Sets differ depending on whether the roof has a glass panel. Look at the roof of your car from outside or from inside.",
 			"glassRoofYes": "Yes, it has a glass roof",

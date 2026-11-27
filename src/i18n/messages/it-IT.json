@@ -334,6 +334,7 @@
 			"roofSkipNote": "Senza il tipo di tetto non possiamo confermare la compatibilità. Puoi aggiungerlo in qualsiasi momento.",
 			"roofMissing": "Il tuo tipo di tetto non c'è? Per questa auto e questo anno abbiamo barre solo per i tipi indicati.",
 			"roofMissingContact": "Scrivici e lo verifichiamo.",
+			"yearNoSet": "Per l'anno {year} non abbiamo ancora un set di barre portatutto per questo veicolo.",
 			"glassRoofLegend": "La tua auto ha il tetto in vetro (panoramico)?",
 			"glassRoofHelp": "I kit cambiano a seconda che il tetto abbia un pannello di vetro. Guarda il tetto della tua auto da fuori o da dentro.",
 			"glassRoofYes": "Sì, ha il tetto in vetro",
