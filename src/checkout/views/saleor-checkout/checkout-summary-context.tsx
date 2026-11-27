@@ -6,6 +6,7 @@ import { type CheckoutFragment } from "@/checkout/graphql";
 import { formatShippingPrice } from "@/checkout/lib/utils/money";
 import { codOffer } from "@/checkout/lib/cod";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
+import { cityLine } from "@/lib/address-city-line";
 
 interface SummaryRow {
 	/** Message key under the `checkout` namespace (e.g. "summary.contact") */
@@ -68,11 +69,13 @@ export const CheckoutSummaryContext: FC<CheckoutSummaryContextProps> = ({ rows, 
 /** Format address as single line string. `locale` localizes the country name (store default when omitted). */
 export function formatAddressLine(address: CheckoutFragment["shippingAddress"], locale?: string): string {
 	if (!address) return "";
-	return `${address.streetAddress1}, ${address.city} ${address.postalCode}, ${localizeCountryName(
-		address.country?.code,
-		address.country?.country,
-		locale,
-	)}`;
+	return [
+		address.streetAddress1,
+		cityLine(address),
+		localizeCountryName(address.country?.code, address.country?.country, locale),
+	]
+		.filter(Boolean)
+		.join(", ");
 }
 
 /**

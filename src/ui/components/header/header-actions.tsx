@@ -4,6 +4,7 @@ import { HeartIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { CartNavItem } from "@/ui/components/nav/components/cart-nav-item";
 import { UserMenuContainer } from "@/ui/components/nav/components/user-menu/user-menu-container";
+import { marketHref } from "@/lib/channel-map";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { WishlistNavBadge } from "@/ui/components/wishlist/wishlist-nav-badge";
 import { headerActionClass, headerActionLabelClass } from "./header-action";
@@ -27,7 +28,7 @@ export async function HeaderActions({ channel }: { channel: string }) {
 
 			{/* Favourites: the heart's list in this browser (`lib/wishlist`), counted like the cart.
 			    No prefetch — the header is on every page and the list is read in the browser. */}
-			<LinkWithChannel href="/oblubene" prefetch={false} className={headerActionClass}>
+			<LinkWithChannel href={marketHref(channel, "/oblubene")} prefetch={false} className={headerActionClass}>
 				<span className="relative">
 					<HeartIcon className="h-5 w-5 lg:h-[1.375rem] lg:w-[1.375rem]" aria-hidden />
 					<WishlistNavBadge />

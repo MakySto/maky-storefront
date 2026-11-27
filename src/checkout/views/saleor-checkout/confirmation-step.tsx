@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { type CheckoutFragment } from "@/checkout/graphql";
 import { marketHref } from "@/lib/channel-map";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
+import { cityLine } from "@/lib/address-city-line";
 import { useLocale } from "@/providers/locale-provider";
 
 interface ConfirmationStepProps {
@@ -21,8 +22,7 @@ function formatAddress(
 	if (!address) return null;
 	return [
 		address.streetAddress1,
-		address.city,
-		address.postalCode,
+		cityLine(address),
 		localizeCountryName(address.country?.code, address.country?.country, locale),
 	]
 		.filter(Boolean)

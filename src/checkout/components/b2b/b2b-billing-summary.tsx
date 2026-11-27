@@ -7,6 +7,7 @@ import { type AddressFragment, type CountryCode } from "@/checkout/graphql";
 import type { B2bInputV1 } from "@/checkout/lib/b2b/contract";
 import { countryOfVatId, vatFieldLabelKey } from "@/checkout/lib/b2b/vat-id";
 import { getCountryName } from "@/checkout/lib/utils/locale";
+import { cityLine } from "@/lib/address-city-line";
 import { useLocale } from "@/providers/locale-provider";
 
 type B2bBillingSummaryProps = {
@@ -32,7 +33,7 @@ export const B2bBillingSummary: FC<B2bBillingSummaryProps> = ({
 	const vatLabel = t(`b2b.vatLabel.${vatFieldLabelKey(countryOfVatId(input.vatId) ?? country)}`);
 	const name = [billingAddress?.firstName, billingAddress?.lastName].filter(Boolean).join(" ");
 	const street = [billingAddress?.streetAddress1, billingAddress?.streetAddress2].filter(Boolean).join(", ");
-	const city = [billingAddress?.postalCode, billingAddress?.city].filter(Boolean).join(" ");
+	const city = cityLine(billingAddress);
 
 	return (
 		<section className="space-y-3" aria-labelledby="b2b-billing-summary-title">

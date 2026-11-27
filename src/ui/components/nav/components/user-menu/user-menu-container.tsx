@@ -5,6 +5,7 @@ import { UserIcon } from "lucide-react";
 import { UserMenu } from "./user-menu";
 import { CurrentUserDocument } from "@/gql/graphql";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
+import { marketHref } from "@/lib/channel-map";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { headerActionClass, headerActionLabelClass } from "@/ui/components/header/header-action";
 
@@ -36,7 +37,7 @@ export async function UserMenuContainer({ channel }: { channel: string }) {
 		// which is where an account starts.
 		const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "nav" });
 		return (
-			<LinkWithChannel href="/login" className={headerActionClass}>
+			<LinkWithChannel href={marketHref(channel, "/login")} className={headerActionClass}>
 				<UserIcon className="h-5 w-5 lg:h-[1.375rem] lg:w-[1.375rem]" aria-hidden="true" />
 				<span className={headerActionLabelClass}>{t("myAccount")}</span>
 			</LinkWithChannel>

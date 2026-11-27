@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { type AddressDetailsFragment } from "@/gql/graphql";
 import { cn } from "@/lib/utils";
+import { cityLine } from "@/lib/address-city-line";
 
 type Props = {
 	address: AddressDetailsFragment;
@@ -44,10 +45,7 @@ export async function AccountAddressCard({
 					{address.streetAddress2 && (
 						<p className="text-muted-foreground text-sm">{address.streetAddress2}</p>
 					)}
-					<p className="text-muted-foreground text-sm">
-						{address.city}
-						{address.countryArea && `, ${address.countryArea}`} {address.postalCode}
-					</p>
+					<p className="text-muted-foreground text-sm">{cityLine(address)}</p>
 					<p className="text-muted-foreground text-sm">{address.country.country}</p>
 					{address.phone && <p className="text-muted-foreground mt-2 text-sm">{address.phone}</p>}
 				</div>

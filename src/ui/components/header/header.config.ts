@@ -12,6 +12,7 @@
  */
 import { categoriesFor, categoryHref, isCategorySlug } from "@/config/categories";
 import { categoryUrlFor } from "@/config/category-routes";
+import { marketHref } from "@/lib/channel-map";
 
 export interface NavItem {
 	readonly key: string;
@@ -66,4 +67,16 @@ export const ALL_CATEGORIES_NAV: readonly NavItem[] = categoriesFor("home").map(
 export function localizedNavHref(channel: string, href: string): string {
 	const slug = href.slice(1);
 	return href.startsWith("/") && isCategorySlug(slug) ? categoryUrlFor(channel, slug) : href;
+}
+
+/**
+ * `localizedNavHref` as a full address of the market (`/cz/stresni-nosice`).
+ *
+ * The navigation hands its links to client components, and what it hands over is written into the
+ * page's RSC payload. A bare `/stresni-nosice` there is read by a crawler as an address on the root
+ * of the domain, which no market routes. `LinkWithChannel` leaves a path that already has the
+ * market in it as it is.
+ */
+export function marketNavHref(channel: string, href: string): string {
+	return marketHref(channel, localizedNavHref(channel, href));
 }

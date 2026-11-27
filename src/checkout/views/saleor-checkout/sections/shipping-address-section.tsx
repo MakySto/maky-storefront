@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Label } from "@/ui/components/ui/label";
 import { FormSelect, FieldError, AddressFields } from "../address-form-fields";
 import { HybridAddressSelector } from "@/checkout/components/shipping-address";
-import { getCountryName } from "@/checkout/lib/utils/locale";
+import { countryOptions } from "@/checkout/lib/utils/locale";
 import { useLocale } from "@/providers/locale-provider";
 import type { CountryCode, AddressFragment } from "@/checkout/graphql";
 import type { AddressField } from "@/checkout/components/address-form/types";
@@ -135,10 +135,7 @@ export const ShippingAddressSection: FC<ShippingAddressSectionProps> = ({
 							onChange={onCountryChange}
 							placeholder={t("addressForm.selectCountry")}
 							autoComplete="country"
-							options={availableCountries.map((code) => ({
-								value: code,
-								label: getCountryName(code, locale),
-							}))}
+							options={countryOptions(availableCountries, locale)}
 						/>
 					</div>
 

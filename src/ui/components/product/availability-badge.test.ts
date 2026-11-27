@@ -1,6 +1,18 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import sk from "@/i18n/messages/sk-SK.json";
-import { resolveAvailability } from "./availability-badge";
+import {
+	AvailabilityBadge,
+	isLastPiece,
+	resolveAvailability,
+	type AvailabilityInput,
+} from "./availability-badge";
+
+const MESSAGES = join(dirname(fileURLToPath(import.meta.url)), "../../../i18n/messages");
 
 /**
  * Untracked sale-to-order products receive a synthetic quantity cap, which must
@@ -124,5 +136,94 @@ describe("the Slovak sentence a sale-to-order product shows", () => {
 			expect(rendered, JSON.stringify(input)).not.toBe(sk.common.inStock);
 			expect(rendered, JSON.stringify(input)).not.toBe(sk.product.lowStock);
 		}
+	});
+});
+
+/**
+ * One piece left of a tracked variant: the product page's quantity control is locked at 1 (both
+ * buttons off) and the badge beside it is the only place that can say why.
+ */
+describe("the last piece of a tracked variant", () => {
+	const LOCALES = [
+		"cs-CZ",
+		"de-AT",
+		"de-DE",
+		"en-CA",
+		"en-US",
+		"es-ES",
+		"fr-FR",
+		"hu-HU",
+		"it-IT",
+		"pl-PL",
+		"ro-RO",
+		"sk-SK",
+	] as const;
+	const messages = (locale: string) =>
+		JSON.parse(readFileSync(join(MESSAGES, `${locale}.json`), "utf8")) as {
+			common: Record<string, string>;
+		};
+	const detailed = (locale: string, input: AvailabilityInput) => {
+		const common = messages(locale).common;
+		return renderToStaticMarkup(
+			createElement(AvailabilityBadge, { ...input, detailed: true, label: (key) => common[key] }),
+		);
+	};
+
+	it("is one piece of counted stock and nothing else", () => {
+		expect(isLastPiece({ trackInventory: true, quantityAvailable: 1 })).toBe(true);
+		for (const quantityAvailable of [0, 2, 3, 50, null, undefined]) {
+			expect(isLastPiece({ trackInventory: true, quantityAvailable }), String(quantityAvailable)).toBe(false);
+		}
+	});
+
+	it("is never read from Saleor's cap on an untracked variant", () => {
+		// For an untracked variant the number is a checkout ceiling, not stock.
+		expect(isLastPiece({ trackInventory: false, quantityAvailable: 1 })).toBe(false);
+		expect(isLastPiece({ quantityAvailable: 1 })).toBe(false);
+		expect(isLastPiece({ mode: "sale_to_order", quantityAvailable: 1 })).toBe(false);
+		expect(isLastPiece({ mode: "sale_to_order", trackInventory: null, quantityAvailable: 1 })).toBe(false);
+	});
+
+	it("is said under the state on the product page, in every market's language", () => {
+		for (const locale of LOCALES) {
+			const { common } = messages(locale);
+			expect(common.lastPiece, locale).toBeTruthy();
+			const html = detailed(locale, { trackInventory: true, quantityAvailable: 1 });
+			expect(html, locale).toContain(common.inStock);
+			expect(html, locale).toContain(common.lastPiece);
+		}
+		expect(messages("sk-SK").common.lastPiece).toBe("Posledný kus");
+		expect(messages("de-DE").common.lastPiece).toBe("Letztes Stück");
+	});
+
+	it("is not said when more than one piece is in stock", () => {
+		for (const locale of LOCALES) {
+			const html = detailed(locale, { trackInventory: true, quantityAvailable: 2 });
+			expect(html, locale).toContain(messages(locale).common.inStock);
+			expect(html, locale).not.toContain(messages(locale).common.lastPiece);
+		}
+	});
+
+	it("is not said for a product ordered on demand, whatever number Saleor reports", () => {
+		const { common } = messages("sk-SK");
+		for (const quantityAvailable of [1, 50, null]) {
+			const html = detailed("sk-SK", { mode: "sale_to_order", quantityAvailable });
+			expect(html, String(quantityAvailable)).toContain(common.onDemandShort);
+			expect(html, String(quantityAvailable)).not.toContain(common.lastPiece);
+		}
+	});
+
+	it("leaves the listing card's short badge as it was", () => {
+		const { common } = messages("sk-SK");
+		const html = renderToStaticMarkup(
+			createElement(AvailabilityBadge, {
+				trackInventory: true,
+				quantityAvailable: 1,
+				short: true,
+				label: (key) => common[key],
+			}),
+		);
+		expect(html).toContain(common.inStock);
+		expect(html).not.toContain(common.lastPiece);
 	});
 });
