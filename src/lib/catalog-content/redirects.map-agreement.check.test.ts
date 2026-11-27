@@ -63,16 +63,6 @@ function pathIndex(dataset: FitmentDataset, contentPath: string | undefined): Ma
 	return index;
 }
 
-/**
- * Older entries from RELEASE-4 (2026-09-15) that this check is not about. Their cars are still live
- * in the datasets of 2026-10-14 and 2026-10-18, so the "still live" test below would fail on them for
- * a reason that predates the merge of duplicate generations; they are listed in the output instead.
- */
-const EARLIER_ENTRIES = new Set([
-	"/stresne-nosice/subaru/legacy-kombi/bp",
-	"/stresne-nosice/hyundai/h-1-van/tq",
-]);
-
 /** The path of a vehicle, or of its nearest ancestor that has one: a surviving car with no page of its own is reached through its model or brand. */
 function nearestPath(dataset: FitmentDataset, index: Map<string, string>, id: string): string | undefined {
 	const pathOf = new Map<string, string>();
@@ -103,10 +93,6 @@ describe.skipIf(!available)("the retired-page redirects against the map of the n
 		const problems: string[] = [];
 		const neverPublished: string[] = [];
 		for (const [from, to] of Object.entries(CATALOG_REDIRECTS.exact.sk ?? {})) {
-			if (EARLIER_ENTRIES.has(from)) {
-				rows.push(`${from} -> ${to}: earlier entry (RELEASE-4), not checked here`);
-				continue;
-			}
 			const id = oldIndex.get(from);
 			if (!id) {
 				neverPublished.push(from);
