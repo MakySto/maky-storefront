@@ -239,6 +239,6 @@ describe("what a card on the Green Valley shelf says the set is for", () => {
 	it("prints the roof and the years from the application, for each of the three roofs", () => {
 		expect(forSet(RAISED_UNTIL_2019)).toEqual({ roof: "Klasické lyžiny", years: "2014 – 2019" });
 		expect(forSet(FLUSH_FROM_2014)).toEqual({ roof: "Integrované lyžiny", years: "od 2014" });
-		expect(forSet(T_TRACK_FROM_2018)).toEqual({ roof: "T-drážka", years: "od 2018" });
+		expect(forSet(T_TRACK_FROM_2018)).toEqual({ roof: "Strecha s T-drážkou", years: "od 2018" });
 	});
 });

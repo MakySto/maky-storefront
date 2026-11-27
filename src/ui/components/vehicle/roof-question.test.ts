@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { createElement } from "react";
 import { createTranslator } from "next-intl";
@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({ useParams: () => ({ channel: "sk-eur" }) }))
 
 import { type RoofType } from "@/lib/fitment/contract";
 import { type RoofAnswer } from "@/lib/fitment/selector-types";
-import { RoofQuestion } from "./roof-question";
+import { ROOF_IMAGE, RoofQuestion } from "./roof-question";
 
 /**
  * The selector's roof question, as the shopper reads it (owner, 2026-11-27).
@@ -63,20 +63,23 @@ function render(
 	);
 }
 
-/** The roof buttons: the ones that carry a drawing. */
+/** The roof buttons: the ones that carry a picture. */
 const cards = (html: string) =>
-	html.match(/<button[^>]*aria-pressed="(?:true|false)"[^>]*><svg.*?<\/button>/g) ?? [];
+	html.match(/<button[^>]*aria-pressed="(?:true|false)"[^>]*><img.*?<\/button>/g) ?? [];
 
 describe("every roof on offer is a picture, its name and how to tell it", () => {
-	it("draws each offered roof, names it in the shop's words and says what to look for", () => {
+	it("shows each offered roof with its picture, the standard's name and what to look for", () => {
 		const html = render({ roofTypes: ["raised-rails", "flush-rails", "naked-roof"] });
 		const found = cards(html);
 		expect(found).toHaveLength(3);
 		expect(found[0]).toContain("Klasické lyžiny");
-		expect(found[0]).toContain("Medzi lyžinou a strechou je medzera");
+		expect(found[0]).toContain("Medzera medzi lyžinou a strechou.");
+		expect(found[0]).toContain("raised-rails.webp");
 		expect(found[1]).toContain("Integrované lyžiny");
+		expect(found[1]).toContain("flush-rails.webp");
 		expect(found[2]).toContain("Hladká strecha");
-		expect(found[2]).toContain("pod lem dverí");
+		expect(found[2]).toContain("Bez lyžín a určených montážnych bodov.");
+		expect(found[2]).toContain("normal-roof.webp");
 	});
 
 	it("offers nothing but the roofs it was given: no 'another type'", () => {
@@ -86,11 +89,26 @@ describe("every roof on offer is a picture, its name and how to tell it", () => 
 		expect(html).not.toContain("Klasické lyžiny");
 	});
 
-	it("draws all six roof types differently", () => {
-		const drawings = ALL_ROOFS.map(
-			(roof) => cards(render({ roofTypes: [roof] }))[0]!.match(/<svg.*?<\/svg>/)![0],
+	it("has a picture of its own for each of the six roof types, and the file is there", () => {
+		const files = ALL_ROOFS.map((roof) => ROOF_IMAGE[roof]);
+		expect(new Set(files).size).toBe(6);
+		for (const file of files) expect(existsSync(path.join(process.cwd(), "public", file)), file).toBe(true);
+		// The picture says nothing a screen reader needs twice: the name and the line are beside it.
+		expect(cards(render({ roofTypes: ALL_ROOFS })).every((card) => /<img[^>]*alt=""/.test(card))).toBe(true);
+	});
+
+	it("names the six types as the terminology standard does, in Slovak", () => {
+		const names = cards(render({ roofTypes: ALL_ROOFS })).map(
+			(card) => card.match(/font-semibold">([^<]+)</)![1],
 		);
-		expect(new Set(drawings).size).toBe(6);
+		expect(names).toEqual([
+			"Klasické lyžiny",
+			"Integrované lyžiny",
+			"Hladká strecha",
+			"Fixačné body",
+			"Strecha s T-drážkou",
+			"Odkvapový žliabok",
+		]);
 	});
 
 	it("asks for confirmation even when one roof is on offer, and preselects nothing", () => {

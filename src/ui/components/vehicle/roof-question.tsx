@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useId, useState } from "react";
 import { Check, ChevronDown, ExternalLink } from "lucide-react";
 
@@ -29,10 +30,12 @@ const ROOF_HINT_KEYS: Record<RoofType, string> = {
  * cannot stand in for the second. With one option the question is one picture to confirm,
  * which is a smaller ask than a list — not a reason to skip it.
  *
- * Every roof on offer is a picture, its name and one line that says how to tell it on the car
- * (owner, 2026-11-27: the question had no pictures, and a name such as "Integrované lyžiny"
- * means nothing to somebody who has never bought a rack). The names stay the ones the listing and
- * the product page use (`ROOF_LABEL_KEY`), so the shopper meets one vocabulary.
+ * Every roof on offer is a tile: the owner's picture of it, its name and one line that says how to
+ * tell it on the car (owner, 2026-11-27: the question had no pictures, and a name such as
+ * "Integrované lyžiny" means nothing to somebody who has never bought a rack). The names and the
+ * lines are the terminology standard's (v1.2, 2026-11-27, twelve markets), and the names are the
+ * ones the listing and the product page use (`ROOF_LABEL_KEY`), so the shopper meets one vocabulary.
+ * Tiles are two to a row and equally tall, and a name wraps rather than being cut.
  *
  * A shopper who cannot tell opens the help: how to look at the roof, the detailed guide in a new
  * tab where this market has one (the window and what was chosen stay as they are), and a way to go
@@ -70,7 +73,7 @@ export function RoofQuestion({
 			</legend>
 			<p className="text-text-tertiary mb-2 text-xs">{t("selector.roofTypeHelp")}</p>
 
-			<div className="flex flex-col gap-2">
+			<div className={cn("grid gap-2", roofTypes.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
 				{roofTypes.map((roof) => {
 					const active = answer?.kind === "confirmed" && answer.roofType === roof;
 					return (
@@ -80,21 +83,23 @@ export function RoofQuestion({
 							aria-pressed={active}
 							onClick={() => onAnswer({ kind: "confirmed", roofType: roof })}
 							className={cn(
-								"border-border-default bg-surface-card text-text-primary hover:border-border-strong focus-visible:ring-ring flex w-full items-center gap-3 rounded-md border p-2 text-left transition-colors focus-visible:ring-2 focus-visible:outline-hidden",
+								"border-border-default bg-surface-card text-text-primary hover:border-border-strong focus-visible:ring-ring relative flex h-full flex-col overflow-hidden rounded-md border text-left transition-colors focus-visible:ring-2 focus-visible:outline-hidden",
+								roofTypes.length === 1 && "sm:flex-row sm:items-center",
 								active && "border-action-primary ring-action-primary hover:border-action-primary ring-1",
 							)}
 						>
-							<RoofIllustration roofType={roof} />
-							<span className="min-w-0 flex-1">
-								<span className="block text-sm font-semibold">{t(ROOF_LABEL_KEY[roof])}</span>
-								<span className="text-text-secondary mt-0.5 block text-xs leading-snug">
+							<RoofIllustration roofType={roof} className={roofTypes.length === 1 ? "sm:w-1/2" : undefined} />
+							<span className="block min-w-0 flex-1 p-2.5">
+								<span className="block text-sm leading-snug font-semibold">{t(ROOF_LABEL_KEY[roof])}</span>
+								<span className="text-text-secondary mt-1 block text-xs leading-snug">
 									{t(ROOF_HINT_KEYS[roof])}
 								</span>
 							</span>
-							<Check
-								className={cn("text-action-primary h-5 w-5 shrink-0", !active && "invisible")}
-								aria-hidden="true"
-							/>
+							{active && (
+								<span className="bg-action-primary text-action-primary-text absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full">
+									<Check className="h-4 w-4" aria-hidden="true" />
+								</span>
+							)}
 						</button>
 					);
 				})}
@@ -166,56 +171,37 @@ export function RoofQuestion({
 }
 
 /**
- * A schematic roof, drawn rather than photographed.
+ * The picture of each roof type: the owner's own illustrations (2026-11-27), one angle, one scale, one
+ * background, the thing to look for in blue. They live in `public/roof-types/` under the file names
+ * of the terminology standard, cropped to the band the car fills (8:5) and sized for a tile; the
+ * originals are kept with the project's files. A better drawing replaces the file of the same name.
  *
- * The question is "does your car look like this?", so every answer needs a picture. A line drawing
- * is honest about being schematic, carries no brand, needs no asset pipeline and no network
- * request. The car is the same in all six (the cabin from the side, in `currentColor`); what
- * differs is the one thing the shopper is asked to look for, in the brand colour: the rail and the
- * gap under it, the rail lying on the roof, the door frame a bare roof is clamped by, the two
- * covers of a fixpoint, the channel, the gutter lip.
- *
- * Decorative for assistive technology: the name and the hint beside it say the same in words.
+ * The standard's identifiers (`normal_roof`, `fixed_points`, `roof_tracks`, `rain_gutters`) are a
+ * proposal for new data. The dataset's codes stay as they are, as the standard itself asks where
+ * stable codes exist, and this map is the one place that ties a code to its picture.
  */
-export function RoofIllustration({ roofType }: { roofType: RoofType }) {
+export const ROOF_IMAGE: Record<RoofType, string> = {
+	"naked-roof": "/roof-types/normal-roof.webp",
+	"raised-rails": "/roof-types/raised-rails.webp",
+	"flush-rails": "/roof-types/flush-rails.webp",
+	fixpoint: "/roof-types/fixed-points.webp",
+	"t-track": "/roof-types/roof-tracks.webp",
+	"rain-gutter": "/roof-types/rain-gutters.webp",
+};
+
+/**
+ * Decorative for assistive technology (`alt=""`): inside the button the name and the line beside it
+ * say the same in words, and an alt text would make a screen reader say the name twice.
+ */
+export function RoofIllustration({ roofType, className }: { roofType: RoofType; className?: string }) {
 	return (
-		<svg viewBox="0 0 200 84" className="text-text-secondary h-12 w-28 shrink-0" aria-hidden="true">
-			<path d="M40 72L62 44H148L170 72Z" className="fill-surface-muted" />
-			<path d="M104 44V72" fill="none" stroke="currentColor" strokeWidth="1.5" />
-			<path d="M14 72H186" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-			<path
-				d="M30 72L54 40Q58 34 66 34H142Q152 34 157 40L178 72"
-				fill="none"
-				stroke="currentColor"
-				strokeWidth="2.5"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-			<g className="text-brand" fill="none" stroke="currentColor">
-				{roofType === "raised-rails" && (
-					<>
-						<path d="M62 22H143" strokeWidth="4" strokeLinecap="round" />
-						<path d="M67 22V34M104 22V34M138 22V34" strokeWidth="3" />
-					</>
-				)}
-				{roofType === "flush-rails" && <path d="M60 31H145" strokeWidth="5" strokeLinecap="round" />}
-				{roofType === "naked-roof" && <path d="M56 39H150" strokeWidth="2" strokeDasharray="3 4" />}
-				{roofType === "fixpoint" && (
-					<>
-						<rect x="68" y="29" width="14" height="5" rx="1.5" fill="currentColor" stroke="none" />
-						<rect x="124" y="29" width="14" height="5" rx="1.5" fill="currentColor" stroke="none" />
-					</>
-				)}
-				{roofType === "t-track" && (
-					<>
-						<path d="M60 29H145M60 32.5H145" strokeWidth="1.6" />
-						<path d="M60 27v8M145 27v8" strokeWidth="1.6" />
-					</>
-				)}
-				{roofType === "rain-gutter" && (
-					<path d="M46 40Q50 36 56 36H152Q158 36 162 41" strokeWidth="3" strokeLinecap="round" />
-				)}
-			</g>
-		</svg>
+		<Image
+			src={ROOF_IMAGE[roofType]}
+			alt=""
+			width={720}
+			height={450}
+			sizes="(min-width: 640px) 208px, 46vw"
+			className={cn("bg-surface-card aspect-[8/5] h-auto w-full shrink-0 object-cover", className)}
+		/>
 	);
 }
