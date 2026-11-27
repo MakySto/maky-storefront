@@ -47,6 +47,25 @@ describe("the Slovak shelf", () => {
 		expect(firstAccessory).toBeGreaterThan(lastCarrier);
 	});
 
+	it("lists a product named by the words asked before one that only holds them", () => {
+		// Live, 2026-11-27: "nosič lyží" was led by an add-on for a bike carrier, by the alphabet.
+		const found = names(sk, "nosič lyží", { preferRoots: new Set(["nosice-lyzi"]) });
+		const addOn = found.indexOf("GP nosič lyží pre nosiče bicyklov Peruzzo");
+		const magnetic = found.indexOf("Magnetický nosič lyží Menabo Himalaya na 2 páry lyží");
+		const named = found.map((name) => name.startsWith("Nosič lyží")).lastIndexOf(true);
+		expect(named).toBe(2);
+		expect(addOn).toBeGreaterThan(named);
+		expect(magnetic).toBeGreaterThan(named);
+		// One word is read the same way, and in its other endings.
+		expect(names(sk, "nosič")[0]).toMatch(/^Nosič /);
+		expect(names(sk, "nosiče lyží")[0]).toMatch(/^Nosič lyží/);
+	});
+
+	it("does not read a maker alone as what the product is", () => {
+		// "Thule Allax S" is a dog crate; its name begins with the maker as every Thule accessory's does.
+		expect(names(sk, "thule")[0]).toBe("Nosič bicyklov Thule Epos 2 - 978");
+	});
+
 	it("finds a compound by its part, and two words by the one word they are written as", () => {
 		// "chladnička" found the stand and the battery first; now the fridges.
 		expect(names(sk, "chladnička").slice(0, 2)).toEqual([

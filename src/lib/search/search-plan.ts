@@ -24,7 +24,9 @@ export type SearchCursor =
 	| { readonly kind: "start" }
 	/** A page of the shop's own index, from this position. */
 	| { readonly kind: "shelf"; readonly offset: number }
-	| { readonly kind: "saleor"; readonly variant: SaleorVariant; readonly cursor: string };
+	| { readonly kind: "saleor"; readonly variant: SaleorVariant; readonly cursor: string }
+	/** A page of the answer to the words with a misspelt car corrected; `inner` is that answer's own cursor. */
+	| { readonly kind: "corrected"; readonly inner: string };
 
 const VARIANT_LETTER: Readonly<Record<SaleorVariant, string>> = {
 	full: "f",
@@ -43,6 +45,11 @@ export function shelfCursor(offset: number): string {
 	return `shelf.${Math.max(0, Math.floor(offset))}`;
 }
 
+/** The cursor of an answer that was given for corrected words (`c.shelf.20`, `c.f.WyJhIl0=`). */
+export function correctedCursor(inner: string): string {
+	return `c.${inner}`;
+}
+
 export function saleorCursor(variant: SaleorVariant, cursor: string): string {
 	return `${VARIANT_LETTER[variant]}.${cursor}`;
 }
@@ -53,6 +60,8 @@ export function saleorCursor(variant: SaleorVariant, cursor: string): string {
  */
 export function parseSearchCursor(raw: string | null | undefined): SearchCursor {
 	if (!raw) return { kind: "start" };
+	const corrected = /^c\.(.+)$/.exec(raw);
+	if (corrected) return { kind: "corrected", inner: corrected[1]! };
 	const shelf = /^shelf\.(\d{1,6})$/.exec(raw);
 	if (shelf) return { kind: "shelf", offset: Number(shelf[1]) };
 	const saleor = /^([frvb])\.(.+)$/.exec(raw);
