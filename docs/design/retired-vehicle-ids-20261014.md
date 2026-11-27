@@ -80,3 +80,26 @@ key (the validator ignores unknown fields) and would send shoppers to "choose ag
 ## Stránky zlúčených generácií: skutočné 301 (18. 10. 2026)
 
 Starý odkaz na stránku auta rieši `redirects.json` v `src/proxy.ts`, pred vykreslením, a to je skutočné HTTP 301. Page-úroveň (`retired-page.ts`) zostáva záloha pre stránku, ktorá v tabuľke nie je; v PPR sa tam stav odošle až po hlavičkách (200 s meta refresh alebo noindex; zmerané na produkcii 18. 10. 2026: 200 s `__next-page-redirect` a `NEXT_REDIRECT` 308 v tele, nie 301). Pre 12 stránok z odpovede CFM 4.5 z 18. 10. (144 dvojíc) tabuľka platí, takže hrana má prednosť pred mäkkým 404. Zoznam a pravidlo cesty sú v `redirects.merged-generations.test.ts`. Cieľ je stránka, ktorú web naozaj vykreslí (uzol s publikovanou stránkou); ak ju zostávajúci uzol nemá, odkaz ide o úroveň vyššie, nie na stránku, ktorú trasa nevykreslí.
+
+## Fitment list of the week of 2026-11-30 (27. 11. 2026)
+
+CFM corrects 11 overlapping generations. What the storefront does with each part, checked on a copy of
+`3.0.0-full-20261022.2` with the four changes applied (`retired-ids.check.test.ts`: 0 dropped, nothing unexplained,
+no set lost) and on the live site on 2026-11-27 (the four pages answer 200 and are indexed in sk):
+
+| Change                                                                          | Web                                                                                                                                             |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Kamiq NW4 to NW, Patriot MK to MK74, Rexton Y250 to Y200 (`generations`)        | saved car moves silently; a year the successor was never built in is asked again; old page 301 to the successor (`redirects.json`)              |
+| Mazda 3 Hatchback "2003-2013" split between BK and BL (`generations_split`)     | saved car settled by its year where one window holds it (2003-2008 BK, 2010-2013 BL), asked in 2009 and outside; old page 301 to the model page |
+| End year of A6 Avant C8, Q3 F3, C5 Aircross (2025), Caddy 2K, Caddy Maxi (2015) | a saved car whose year is now past the end is ASKED again (`retired.ts`, live branch), nothing is moved by the year alone                       |
+| Names C84 and SB, addresses unchanged                                           | read from the dataset at once; page titles follow the content release                                                                           |
+
+**The map is cumulative.** Live on 2026-11-27 (`/api/fitment/status`, dataset `3.1.0-full-20261119.1`): `retiredIds`
+moved 87, split 14, models 1, dropped 0. The new dataset must show moved 90, split 15, models 1, dropped 0. Anything
+else means an earlier entry was lost.
+
+**Order.** The four 301 rows (48 pairs, `redirects.merged-20261130.test.ts`) and the garage rule must be live BEFORE
+CFM withdraws the four pages, and are best live before the candidate is approved; a page withdrawn without the 301
+answers not-found. The 21 duplicated products are redirected from `product-redirects.json` (old slug to the kept
+slug, per market; `scripts/ops/product-redirects-from-table.mjs`) and need CFM's table of pairs; the proxy redirects
+only when Saleor says the old slug is gone and the new one exists, so the table can be deployed before CFM withdraws them.
