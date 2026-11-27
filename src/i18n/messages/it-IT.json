@@ -1113,6 +1113,7 @@
 		"unavailableTitle": "La ricerca non è temporaneamente disponibile",
 		"unavailableHelp": "Al momento non è stato possibile caricare i risultati per «{query}». Riprova tra poco o sfoglia le nostre categorie.",
 		"correctedFrom": "Non abbiamo trovato nulla per «{query}», quindi mostriamo i risultati per il marchio più simile.",
+		"correctedCar": "Non abbiamo trovato nulla per «{query}», quindi mostriamo i risultati per l'auto dal nome più simile.",
 		"vehicleHeading": "Portapacchi da tetto per {vehicle}",
 		"vehicleHelp": "Il portapacchi si sceglie in base alla versione dell'auto e al tipo di tetto. Scegli la tua auto e ti mostriamo i kit adatti.",
 		"vehicleOpen": "Mostra i portapacchi per {vehicle}",

@@ -1113,6 +1113,7 @@
 		"unavailableTitle": "Wyszukiwarka jest chwilowo niedostępna",
 		"unavailableHelp": "Nie udało się teraz wczytać wyników dla „{query}”. Spróbuj ponownie za chwilę lub przejrzyj nasze kategorie.",
 		"correctedFrom": "Nie znaleźliśmy nic dla „{query}”, dlatego pokazujemy wyniki dla najbardziej podobnej marki.",
+		"correctedCar": "Nie znaleźliśmy nic dla „{query}”, dlatego pokazujemy wyniki dla auta o najbardziej podobnej nazwie.",
 		"vehicleHeading": "Bagażniki dachowe do {vehicle}",
 		"vehicleHelp": "Bagażnik dobiera się do wersji auta i rodzaju dachu. Wybierz swoje auto, a pokażemy zestawy, które do niego pasują.",
 		"vehicleOpen": "Pokaż bagażniki do {vehicle}",

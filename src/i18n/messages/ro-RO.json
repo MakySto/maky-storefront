@@ -1113,6 +1113,7 @@
 		"unavailableTitle": "Căutarea este temporar indisponibilă",
 		"unavailableHelp": "Nu am putut încărca acum rezultatele pentru „{query}”. Încercați din nou peste puțin timp sau răsfoiți categoriile noastre.",
 		"correctedFrom": "Nu am găsit nimic pentru „{query}”, așa că afișăm rezultatele pentru cea mai apropiată marcă.",
+		"correctedCar": "Nu am găsit nimic pentru „{query}”, așa că afișăm rezultatele pentru mașina cu numele cel mai apropiat.",
 		"vehicleHeading": "Bare de acoperiș pentru {vehicle}",
 		"vehicleHelp": "Barele se aleg după versiunea mașinii și tipul acoperișului. Alegeți mașina și vă arătăm seturile potrivite.",
 		"vehicleOpen": "Vezi barele pentru {vehicle}",

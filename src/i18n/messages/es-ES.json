@@ -1113,6 +1113,7 @@
 		"unavailableTitle": "La búsqueda no está disponible temporalmente",
 		"unavailableHelp": "No hemos podido cargar los resultados de «{query}» en este momento. Vuelve a intentarlo en un momento o explora nuestras categorías.",
 		"correctedFrom": "No hemos encontrado nada para «{query}», así que mostramos resultados de la marca más parecida.",
+		"correctedCar": "No hemos encontrado nada para «{query}», así que mostramos resultados del coche con el nombre más parecido.",
 		"vehicleHeading": "Barras de techo para {vehicle}",
 		"vehicleHelp": "Las barras se eligen según la versión del coche y el tipo de techo. Elige tu coche y te mostramos los kits compatibles.",
 		"vehicleOpen": "Ver barras para {vehicle}",

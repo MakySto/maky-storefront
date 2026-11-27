@@ -15,6 +15,7 @@ import {
 	type SaleorVariant,
 	findTyreText,
 	onlyWords,
+	correctedCursor,
 	parseSearchCursor,
 	saleorCursor,
 	shelfCursor,
@@ -35,6 +36,7 @@ import {
 	NO_VEHICLE,
 	type VehicleIntent,
 	type VehicleNames,
+	correctVehicleTypos,
 	productWordsOf,
 	readVehicleIntent,
 } from "./vehicle-intent";
@@ -67,7 +69,9 @@ import { type VehicleShortcut, readVehicleCatalog, vehicleShortcuts } from "./ve
  *      nothing in Slovak text, "Golf" does);
  *   4. a misspelt maker corrected (`brand-typos.ts`): the index, then Saleor, and the page says so;
  *   5. the index once more, forgiving a spelling mistake and then a missing word, and the page says
- *      that these are the closest products and not the answer.
+ *      that these are the closest products and not the answer;
+ *   6. when all of that found nothing, or only (5): the same search with a misspelt car corrected
+ *      ("octvia", "oktavia", "pasat"), and the page says which car it answered for.
  *
  * A later page continues the answer the first page gave: the `cursor` names it (`search-plan.ts`).
  */
@@ -75,18 +79,22 @@ import { type VehicleShortcut, readVehicleCatalog, vehicleShortcuts } from "./ve
 /** The base slug of the shelf whose products are chosen by car. */
 export const ROOF_RACK_SHELF = "stresne-nosice";
 
+/** How every roof-rack set is named in the base language, which is the text Saleor's search reads. */
+export const ROOF_RACK_SETS_TEXT = "strešný nosič";
+
 export interface SearchAnswer {
 	readonly result: SearchResult;
 	/** The words the listed products answer; differs from what was typed when a note says why. */
 	readonly shownQuery: string;
 	/**
-	 * `brand`: a misspelt maker was corrected. `closest`: nothing carries every word as typed, and
-	 * the products shown are the nearest. `null`: the products answer the words.
+	 * `brand`: a misspelt maker was corrected. `car`: a misspelt car was (`shownQuery` names it).
+	 * `closest`: nothing carries every word as typed, and the products shown are the nearest.
+	 * `null`: the products answer the words.
 	 */
-	readonly note: "brand" | "closest" | null;
+	readonly note: "brand" | "car" | "closest" | null;
 	/** The pages of the car the words name, when the search is for something chosen by car. */
 	readonly vehicles: readonly VehicleShortcut[];
-	/** The words name the roof racks and no car: the page offers to choose one. */
+	/** The roof racks are asked for, or roof-rack sets are the answer, and no car is named: the page offers to choose one. */
 	readonly askForVehicle: boolean;
 	/** The page of the tyre size the words hold. */
 	readonly tyre: { readonly label: string; readonly href: string } | null;
@@ -121,19 +129,65 @@ function productWordsFor(index: ShelfIndex, names: VehicleNames): Set<string> {
 	return words;
 }
 
-/** Every word of a maker's name the shelf knows ("thule", "green", "valley"), per index. */
-const MAKER_WORDS = new WeakMap<ShelfIndex, Set<string>>();
-
-function makerWordsFor(index: ShelfIndex): Set<string> {
-	let words = MAKER_WORDS.get(index);
-	if (!words) {
-		words = new Set(index.docs.flatMap((doc) => searchWords(doc.brand ?? "", index.language)));
-		MAKER_WORDS.set(index, words);
+/**
+ * The answer to a search: to the words as they were typed, and when those found nothing better
+ * than a guess, to the same words with a misspelt car corrected ("octvia" → "octavia"). The page
+ * says which car was meant (`note: "car"`), and the later pages of that answer carry the mark in
+ * their cursor (`c.…`), so they continue the corrected search and not the typed one.
+ */
+export async function answerSearch(request: SearchRequest): Promise<SearchAnswer> {
+	const cursor = parseSearchCursor(request.cursor);
+	if (cursor.kind === "corrected") {
+		const car = await carCorrected(request);
+		// The names have changed since the link was made: the words as typed, from their first page.
+		if (!car) return answerAsTyped({ ...request, cursor: undefined });
+		return forCorrectedCar(await answerAsTyped({ ...request, query: car, cursor: cursor.inner }));
 	}
-	return words;
+
+	const typed = await answerAsTyped(request);
+	const guessed = typed.result.products.length === 0 || typed.note === "closest";
+	if (request.cursor || typed.result.unavailable || typed.vehicles.length > 0 || !guessed) return typed;
+
+	const car = await carCorrected(request);
+	if (!car) return typed;
+	const answer = await answerAsTyped({ ...request, query: car });
+	const answered =
+		answer.vehicles.length > 0 || (answer.result.products.length > 0 && answer.note !== "closest");
+	return answered ? forCorrectedCar(answer) : typed;
 }
 
-export async function answerSearch(request: SearchRequest): Promise<SearchAnswer> {
+/** The typed words with a misspelt car corrected, or null when no word of them is one. */
+async function carCorrected(request: SearchRequest): Promise<string | null> {
+	const { query, channel } = request;
+	const language =
+		catalogLanguageForChannel(channel) ?? getLocaleFromChannel(channel).split("-")[0]!.toLowerCase();
+	const [index, catalog] = await Promise.all([
+		readShelfIndex(channel),
+		readVehicleCatalog(channel).catch(() => null),
+	]);
+	if (!catalog) return null;
+	return correctVehicleTypos(query, catalog.names, language, {
+		productWords: index ? productWordsFor(index, catalog.names) : undefined,
+	});
+}
+
+function forCorrectedCar(answer: SearchAnswer): SearchAnswer {
+	const { nextCursor, prevCursor } = answer.result.pagination;
+	return {
+		...answer,
+		note: "car",
+		result: {
+			...answer.result,
+			pagination: {
+				...answer.result.pagination,
+				nextCursor: nextCursor ? correctedCursor(nextCursor) : undefined,
+				prevCursor: prevCursor ? correctedCursor(prevCursor) : undefined,
+			},
+		},
+	};
+}
+
+async function answerAsTyped(request: SearchRequest): Promise<SearchAnswer> {
 	const { query, channel, direction = "forward", sortBy = "relevance" } = request;
 	const locale = getLocaleFromChannel(channel);
 	const language = catalogLanguageForChannel(channel) ?? locale.split("-")[0]!.toLowerCase();
@@ -142,6 +196,8 @@ export async function answerSearch(request: SearchRequest): Promise<SearchAnswer
 	// bicyklov na strešný nosič", "strešný nosič na lyže"): the other shelf is the one asked for.
 	if (named.size > 1) named.delete(ROOF_RACK_SHELF);
 	let cursor = parseSearchCursor(request.cursor);
+	// The mark of a corrected search is read by `answerSearch`; here its inner cursor arrives.
+	if (cursor.kind === "corrected") cursor = { kind: "start" };
 
 	// A tyre size, and the search without it.
 	const sized = findTyreText(query);
@@ -175,7 +231,11 @@ export async function answerSearch(request: SearchRequest): Promise<SearchAnswer
 	const racksNamed = named.size === 1 && named.has(ROOF_RACK_SHELF);
 	const rackWords = new Set(racksNamed ? request.roofRackWords ?? [] : []);
 	// What is asked of the sets beside being roof racks ("Dachträger Thule Golf" → "Thule Golf").
-	const racksQuery = rackWords.size > 0 ? withoutWords(productQuery, rackWords, language) : "";
+	// Nothing beside it ("roof rack"): the sets by the name Saleor's own text gives every one of
+	// them, for a market whose shelf holds no bars or feet to list (the US and Canada sell the sets
+	// only, and "roof rack" answered "No results" there, live 2026-11-27).
+	const racksQuery =
+		rackWords.size > 0 ? withoutWords(productQuery, rackWords, language) || ROOF_RACK_SETS_TEXT : "";
 
 	const vehicles = forRoofRacks && catalog ? await vehicleShortcuts(channel, intent, catalog.tree) : [];
 	const frame = {
@@ -211,8 +271,17 @@ export async function answerSearch(request: SearchRequest): Promise<SearchAnswer
 				: variant === "brand"
 					? correctBrandTypos(productQuery) ?? productQuery
 					: productQuery;
+	// The index holds every product of the market that is not a roof-rack set, so a page of Saleor's
+	// answer with none of the index's products on it is a page of sets. Without a car they all look
+	// alike ("wingbar" listed 6 601 cards named "Thule WingBar Edge", live 2026-11-27): the offer to
+	// choose the car stands above them. Not above a few: a set found by its code is the answer.
+	const onlySets = (result: SearchResult): boolean =>
+		index !== null &&
+		result.pagination.totalCount > SEARCH_PAGE_SIZE &&
+		result.products.every((product) => !index.docs.some((doc) => doc.id === product.id));
 	const saleorAnswer = (variant: SaleorVariant, result: SearchResult): SearchAnswer => ({
 		...frame,
+		askForVehicle: frame.askForVehicle || (!carNamed && onlySets(result)),
 		result,
 		// The roof racks' name left out changes nothing of what was asked: the sets are roof racks.
 		shownQuery: variant === "full" || variant === "racks" ? query : textOf(variant),
@@ -257,7 +326,7 @@ export async function answerSearch(request: SearchRequest): Promise<SearchAnswer
 	// A maker says whose roof rack, not which part: "nordrive octavia" and "strešný nosič nordrive"
 	// still ask for the sets, "strešný nosič pätky" and "kit octavia" for the part. The makers are
 	// the shelf's as a whole, because the roof-rack parts carry theirs only in the name.
-	const makers = index ? makerWordsFor(index) : new Set<string>();
+	const makers: ReadonlySet<string> = index?.makers ?? new Set<string>();
 	const namesAPart = besides.some((word) => !makers.has(word));
 	const first = !forSets
 		? exact

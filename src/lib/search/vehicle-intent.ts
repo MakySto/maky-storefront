@@ -1,4 +1,4 @@
-import { foldedTokens } from "./words";
+import { editDistance, foldedTokens } from "./words";
 
 /**
  * Reading a car out of a search: "nosič Kuga", "Dachträger VW Golf 7", "octavia combi 2019".
@@ -398,4 +398,75 @@ export function productWordsOf(
 		for (const word of tokens(`${product.name} ${product.brand ?? ""}`, language)) words.add(word);
 	}
 	return words;
+}
+
+/** Letters customers put for each other at the start of a name: "korsa", "wolkswagen". */
+const FIRST_LETTER: Readonly<Record<string, string>> = { k: "c", w: "v" };
+const firstLetter = (word: string): string => FIRST_LETTER[word[0]!] ?? word[0]!;
+
+/**
+ * A misspelt car, corrected: "octvia" and "oktavia" are the Octavia, "pasat" the Passat, "karok"
+ * the Karoq, "hundai" Hyundai. For a search that found nothing as typed; the caller says on the
+ * page that it answered for the nearest name.
+ *
+ * A word of five letters and more is corrected when it is one letter from a word of a model's or
+ * a make's name (one or two in a word of eight and more; two letters swapped count as one) and
+ * begins as that word does. The NEAREST name wins, and two names equally near correct nothing.
+ * Left alone: a word that is a car's name already, declined or not ("octaviu"), a word of the
+ * shop's own products, and the words every model line shares ("combi" is not the Opel Combo).
+ * The corrected words must then read as a car, or nothing is returned.
+ */
+export function correctVehicleTypos(
+	query: string,
+	names: VehicleNames,
+	language: string,
+	options: { readonly productWords?: ReadonlySet<string> } = {},
+): string | null {
+	const productWords = options.productWords ?? new Set<string>();
+	const compiled = compile(names, language);
+	const known = new Set<string>();
+	for (const make of compiled.makes)
+		for (const words of make.names) for (const word of words) known.add(word);
+	for (const model of compiled.models) {
+		for (const { words } of model.names) for (const word of words) known.add(word);
+	}
+	const targets = [...known].filter(
+		(word) =>
+			word.length >= 4 && /^[a-z]+$/.test(word) && !GENERIC_MODEL_WORDS.has(word) && !productWords.has(word),
+	);
+
+	// A car's name already, a word of the shop's own products, or one every model line shares.
+	const leftAlone = (word: string): boolean =>
+		known.has(word) || productWords.has(word) || GENERIC_MODEL_WORDS.has(word);
+
+	let changed = false;
+	const corrected = query
+		.trim()
+		.split(/\s+/)
+		.map((piece) => {
+			const [word, ...rest] = tokens(piece, language);
+			if (!word || rest.length > 0 || word.length < 5 || !/^[a-z]+$/.test(word)) return piece;
+			if (leftAlone(word)) return piece;
+			// A declined name is the name ("octaviu"), not a misspelling of it.
+			if (targets.some((named) => saysWord(word, named))) return piece;
+
+			const limit = word.length <= 7 ? 1 : 2;
+			let nearest: string[] = [];
+			let distance = limit + 1;
+			for (const named of targets) {
+				if (firstLetter(named) !== firstLetter(word)) continue;
+				const d = editDistance(word, named, limit);
+				if (d > limit || d > distance) continue;
+				if (d < distance) nearest = [];
+				distance = d;
+				nearest.push(named);
+			}
+			if (nearest.length !== 1) return piece;
+			changed = true;
+			return nearest[0]!;
+		})
+		.join(" ");
+	if (!changed) return null;
+	const read = readVehicleIntent(corrected, names, language, { productWords });
+	return read.models.length > 0 || read.makeIds.length > 0 ? corrected : null;
 }
