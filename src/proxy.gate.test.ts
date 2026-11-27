@@ -84,11 +84,16 @@ beforeEach(() => {
 	// this, one faulting test opens the breaker for every test after it.
 	resetRouteExistenceStateForTests();
 	process.env.NEXT_PUBLIC_SALEOR_API_URL = ENDPOINT;
+	// This file counts the GATE's lookups. A foreign product URL is also asked whether it is the
+	// Slovak base slug (`proxy.base-slug-redirect.test.ts`), armed or not; stood down here so
+	// "no call" keeps meaning "the gate did not ask".
+	process.env.MAKY_BASE_SLUG_REDIRECT = "off";
 	arm();
 });
 
 afterEach(() => {
 	for (const key of ENV_KEYS) delete process.env[key];
+	delete process.env.MAKY_BASE_SLUG_REDIRECT;
 	vi.unstubAllGlobals();
 	vi.restoreAllMocks();
 	// One case below mocks `@/lib/channel-map` and re-imports the proxy. Resetting the
