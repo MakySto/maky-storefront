@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { type FitmentApplication } from "./contract";
 import {
 	applicationsForYear,
+	brandKey,
 	parseVehicleView,
 	vehicleViewQuery,
 	yearsOnOffer,
@@ -36,6 +37,8 @@ describe("reading the address", () => {
 		expect(parseVehicleView({ year: "2024", roof: "flush-rails" }, KUGA, NOW)).toEqual({
 			year: 2024,
 			roof: "flush-rails",
+			brand: null,
+			sort: null,
 		});
 	});
 
@@ -62,23 +65,55 @@ describe("reading the address", () => {
 	it("reads the first value of a repeated parameter and ignores every other parameter", () => {
 		expect(
 			parseVehicleView({ year: ["2024", "2020"], roof: ["naked-roof", "t-track"], vehicle: "1" }, KUGA, NOW),
-		).toEqual({ year: 2024, roof: "naked-roof" });
-		expect(parseVehicleView({}, KUGA, NOW)).toEqual({ year: null, roof: null });
+		).toEqual({ year: 2024, roof: "naked-roof", brand: null, sort: null });
+		expect(parseVehicleView({}, KUGA, NOW)).toEqual({ year: null, roof: null, brand: null, sort: null });
+	});
+
+	it("reads a maker spelled as the address spells it, and an order the page has", () => {
+		const view = parseVehicleView({ brand: "green-valley", sort: "price_asc" }, KUGA, NOW);
+		expect(view.brand).toBe("green-valley");
+		expect(view.sort).toBe("price_asc");
+		expect(parseVehicleView({ sort: "price_desc" }, KUGA, NOW).sort).toBe("price_desc");
+	});
+
+	it("drops a maker that is not spelled like one and an order the page does not have", () => {
+		for (const brand of ["", "Thule", "green valley", "-thule", "thule-", "a--b", "<b>", "x".repeat(41)]) {
+			expect(parseVehicleView({ brand }, KUGA, NOW).brand, brand).toBeNull();
+		}
+		for (const sort of ["", "featured", "newest", "price-asc", "PRICE_ASC", "bestselling"]) {
+			expect(parseVehicleView({ sort }, KUGA, NOW).sort, sort).toBeNull();
+		}
+	});
+
+	it("spells a maker's name for the address", () => {
+		expect(brandKey("Thule")).toBe("thule");
+		expect(brandKey("Green Valley")).toBe("green-valley");
+		expect(brandKey("Pro-USER")).toBe("pro-user");
+		expect(brandKey("  Škoda  Originál ")).toBe("skoda-original");
+		expect(brandKey("G3 / Pegasus")).toBe("g3-pegasus");
 	});
 
 	it("reads back what it writes", () => {
 		const views: VehicleView[] = [
-			{ year: 2024, roof: "flush-rails" },
-			{ year: 2024, roof: null },
-			{ year: null, roof: "t-track" },
-			{ year: null, roof: null },
+			{ year: 2024, roof: "flush-rails", brand: null, sort: null },
+			{ year: 2024, roof: null, brand: null, sort: null },
+			{ year: null, roof: "t-track", brand: null, sort: null },
+			{ year: null, roof: null, brand: null, sort: null },
+			{ year: 2024, roof: "flush-rails", brand: "thule", sort: "price_asc" },
+			{ year: null, roof: null, brand: "green-valley", sort: null },
+			{ year: null, roof: null, brand: null, sort: "price_desc" },
 		];
 		expect(views.map(vehicleViewQuery)).toEqual([
 			"?year=2024&roof=flush-rails",
 			"?year=2024",
 			"?roof=t-track",
 			"",
+			"?year=2024&roof=flush-rails&brand=thule&sort=price_asc",
+			"?brand=green-valley",
+			"?sort=price_desc",
 		]);
+		// The selector names a year and a roof and nothing else: its address is as it was.
+		expect(vehicleViewQuery({ year: 2024, roof: "flush-rails" })).toBe("?year=2024&roof=flush-rails");
 		for (const view of views) {
 			const search = Object.fromEntries(new URLSearchParams(vehicleViewQuery(view)));
 			expect(parseVehicleView(search, KUGA, NOW)).toEqual(view);

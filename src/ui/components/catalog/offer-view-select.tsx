@@ -4,33 +4,36 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDownIcon } from "lucide-react";
 
-export type YearOption = { value: string; label: string; href: string };
+export type ViewOption = { value: string; label: string; href: string };
 
 /**
- * The year a vehicle page is narrowed to, as the category toolbar's own select.
+ * One choice a vehicle page is narrowed or ordered by (the year, the maker, the order), as the
+ * category toolbar's own select.
  *
  * It holds no state of its own: every option is an address the server built, and choosing one goes
- * there. The year is then in the address, where it can be saved and sent, and the list is the
+ * there. The choice is then in the address, where it can be saved and sent, and the list is the
  * server's answer for that address, the same for everybody who opens it.
  */
-export function OfferYearSelect({
+export function OfferViewSelect({
 	label,
 	value,
 	options,
 }: {
 	label: string;
 	value: string;
-	options: readonly YearOption[];
+	options: readonly ViewOption[];
 }) {
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
 
 	return (
 		<label className="relative flex items-center gap-2">
-			<span className="text-text-secondary text-sm">{label}</span>
+			{/* On a phone the first option says what the control is ("Všetky roky"); the name stays for assistive technology. */}
+			<span className="text-text-secondary hidden text-sm sm:inline">{label}</span>
 			<span className="relative">
 				<select
 					value={value}
+					aria-label={label}
 					disabled={pending}
 					onChange={(event) => {
 						const next = options.find((option) => option.value === event.target.value);

@@ -17,7 +17,18 @@
 
 import { ROOF_TYPES, matchWindow, type FitmentApplication, type RoofType } from "./contract";
 
-export type VehicleView = { year: number | null; roof: RoofType | null };
+/** The orders a vehicle page can be read in, named as the category listing names them (`?sort=`). */
+export const VIEW_SORTS = ["price_asc", "price_desc"] as const;
+export type ViewSort = (typeof VIEW_SORTS)[number];
+
+export type VehicleView = {
+	year: number | null;
+	roof: RoofType | null;
+	/** The maker the list is narrowed to, as `brandKey` spells it. Absent and null are the same: every maker. */
+	brand?: string | null;
+	/** Absent and null are the same: the page's own order. */
+	sort?: ViewSort | null;
+};
 
 /** What a page parameter can arrive as (`searchParams`). */
 export type ViewSearch = Readonly<Record<string, string | readonly string[] | undefined>>;
@@ -28,15 +39,31 @@ export type ProductionSpan = { from?: number | null; to?: number | null };
 const first = (value: string | readonly string[] | undefined): string | undefined =>
 	typeof value === "string" ? value : value?.[0];
 
+/**
+ * A maker's name as the address spells it: "Green Valley" is `green-valley`, "Pro-USER" is
+ * `pro-user`. Made from the name the catalogue gives the set, so a maker needs no table here.
+ */
+export function brandKey(name: string): string {
+	return name
+		.normalize("NFKD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "");
+}
+
+const BRAND_KEY = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 /** The last year a generation still in production is asked about: next year, as in the selector. */
 export function lastYearOf(span: ProductionSpan, currentYear: number): number {
 	return span.to ?? currentYear + 1;
 }
 
 /**
- * Read `?year=` and `?roof=`. Anything that is not a year of this generation, or not a roof type the
- * dataset knows, is dropped without a word: a mistyped address shows the whole page, never an error
- * and never an empty list for a year the car was not built in.
+ * Read `?year=`, `?roof=`, `?brand=` and `?sort=`. Anything that is not a year of this generation, not a
+ * roof type the dataset knows, not spelled like a maker or not an order the page has is dropped without a
+ * word: a mistyped address shows the whole page, never an error and never an empty list for a year the
+ * car was not built in. Whether the page HAS a set of that maker is the list's to say: it knows the sets.
  */
 export function parseVehicleView(search: ViewSearch, span: ProductionSpan, currentYear: number): VehicleView {
 	const rawYear = first(search.year);
@@ -44,17 +71,23 @@ export function parseVehicleView(search: ViewSearch, span: ProductionSpan, curre
 	const rawRoof = first(search.roof);
 	const inSpan =
 		year !== null && (span.from == null || year >= span.from) && year <= lastYearOf(span, currentYear);
+	const rawBrand = first(search.brand) ?? "";
+	const rawSort = first(search.sort);
 	return {
 		year: inSpan ? year : null,
 		roof: (ROOF_TYPES as readonly string[]).includes(rawRoof ?? "") ? (rawRoof as RoofType) : null,
+		brand: rawBrand.length <= 40 && BRAND_KEY.test(rawBrand) ? rawBrand : null,
+		sort: (VIEW_SORTS as readonly string[]).includes(rawSort ?? "") ? (rawSort as ViewSort) : null,
 	};
 }
 
-/** The query string of a view, `year` first: "" for the whole page. */
+/** The query string of a view, always in one order (year, roof, brand, sort): "" for the whole page. */
 export function vehicleViewQuery(view: VehicleView): string {
 	const params = new URLSearchParams();
 	if (view.year !== null) params.set("year", String(view.year));
 	if (view.roof !== null) params.set("roof", view.roof);
+	if (view.brand) params.set("brand", view.brand);
+	if (view.sort) params.set("sort", view.sort);
 	const query = params.toString();
 	return query ? `?${query}` : "";
 }
