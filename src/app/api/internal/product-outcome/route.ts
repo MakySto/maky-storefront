@@ -2,6 +2,8 @@ import { type NextRequest } from "next/server";
 import { SALEOR_SLUGS } from "@/lib/channel-map";
 import { isInternalLoopbackToken, INTERNAL_TOKEN_HEADER } from "@/lib/internal-token";
 import { logUpstreamError } from "@/lib/saleor/resource-outcome";
+import { getLocaleFromChannel } from "@/config/locale";
+import { baseSlugAliasTarget } from "@/lib/saleor/base-slug-alias";
 import { getProductOutcome } from "@/lib/saleor/product-outcome";
 
 /**
@@ -16,7 +18,9 @@ import { getProductOutcome } from "@/lib/saleor/product-outcome";
  * the proxy rewrites to — so it reads or fills the page's own `"use cache"` entry. That sharing
  * is the whole point; see `lib/bot-preflight.ts`.
  *
- * The answer is only the status. It never carries product data, and it is never cached.
+ * The answer is only the status, plus `movedTo` when the product was asked for by its Slovak slug
+ * in a foreign market: the market's own slug, from the same read (`lib/saleor/base-slug-alias.ts`).
+ * It never carries product data, and it is never cached.
  */
 const NO_STORE = { "cache-control": "private, no-store" } as const;
 
@@ -50,5 +54,9 @@ export async function GET(request: NextRequest) {
 			{ headers: NO_STORE },
 		);
 	}
-	return Response.json({ status: outcome.status }, { headers: NO_STORE });
+	const movedTo =
+		outcome.status === "found"
+			? baseSlugAliasTarget(slug, outcome.resource, getLocaleFromChannel(channel))
+			: null;
+	return Response.json({ status: outcome.status, ...(movedTo ? { movedTo } : {}) }, { headers: NO_STORE });
 }

@@ -47,7 +47,6 @@ import {
 	lookupTranslatedProduct,
 	normalizePathname,
 	saleorUnwell,
-	baseSlugAliasTarget,
 } from "./lib/route-existence";
 import { HTML_LIMITED_BOTS } from "./config/html-limited-bots.js";
 import {
@@ -155,28 +154,6 @@ async function movedMarketSlug(market: string, slug: string): Promise<string | n
 	const answer = await lookupTranslatedProduct(alias.newSlug, channel, language);
 	if (answer.verdict !== "exists") return null;
 	return sameCfmProduct(answer.externalReference, alias.cfmProductId) ? alias.newSlug : null;
-}
-
-/**
- * The market's own slug for a product that was asked for by its Slovak (base) slug.
- *
- * Abroad a product is served under the base slug too, because the page looks the base row up
- * first, and that left every product reachable at a second, untranslated address that answers
- * 200 and is indexable (`/de/snehove-retaze-…-n16283`, 27 November 2026). The page names the
- * translated slug as canonical; this makes the address itself say so, once and permanently.
- *
- * Redirects only on proof: Saleor says the slug is a base slug, the product has a different
- * translated slug in this market, and that slug resolves here to the same product. A slug that
- * is already the market's own, a product without a translation (it does not exist here either),
- * a cs slug that is the same string as the sk one, a fault, an open breaker: the request is left
- * alone. `MAKY_BASE_SLUG_REDIRECT=off` turns it off with a restart.
- */
-async function baseSlugMarketTarget(market: string, slug: string): Promise<string | null> {
-	if (process.env.MAKY_BASE_SLUG_REDIRECT?.trim().toLowerCase() === "off") return null;
-	const language = marketLanguageCode(market);
-	const channel = CHANNEL_MAP[market]?.saleorSlug;
-	if (!language || !channel) return null;
-	return baseSlugAliasTarget(slug, channel, language);
 }
 
 /**
@@ -421,10 +398,7 @@ async function route(request: NextRequest) {
 		const rootSlug = resolveLegacyProductSlug(segments[2]);
 		// If that slug has also been replaced in this market, go to the replacement directly.
 		// Two redirects for one click is the chain the contract forbids.
-		// The same for the Slovak slug under a foreign market's retired `/products/` shape.
-		const moved =
-			(await movedMarketSlug(first, rootSlug)) ??
-			(first !== DEFAULT_MARKET ? await baseSlugMarketTarget(first, rootSlug) : null);
+		const moved = await movedMarketSlug(first, rootSlug);
 		const url = request.nextUrl.clone();
 		url.pathname = "/" + first + "/" + (moved ?? rootSlug);
 		return NextResponse.redirect(url, moved ? 301 : 308);
@@ -550,17 +524,12 @@ async function route(request: NextRequest) {
 	// legal pages are excluded by the same logic the existence gate uses. Slovakia never
 	// enters: its slug is the base row and CFM sends no SK entries.
 	//
-	// The second half is the Slovak slug itself in a foreign market (`baseSlugMarketTarget`): no map
-	// names it, because it was never a URL CFM allocated, yet the page serves it.
-	//
 	// Decided on the NORMALIZED path so an in-app `.rsc` navigation is sent to the plain
 	// replacement, which the client router then follows as a full navigation.
 	if (first && FRIENDLY_SLUGS.has(first) && first !== DEFAULT_MARKET) {
 		const decision = classifyRoute(first, normalizePathname(pathname).split("/").filter(Boolean));
 		if (decision?.family === "product") {
-			// CFM's own old → new map first; then the Slovak base slug, which no map ever names.
-			const moved =
-				(await movedMarketSlug(first, decision.slug)) ?? (await baseSlugMarketTarget(first, decision.slug));
+			const moved = await movedMarketSlug(first, decision.slug);
 			if (moved) {
 				const url = request.nextUrl.clone();
 				url.pathname = "/" + first + "/" + moved;
@@ -716,6 +685,20 @@ async function route(request: NextRequest) {
 						...(gateVerdict ? { "x-maky-gate": gateVerdict } : {}),
 					},
 				});
+			}
+			// THE SLOVAK SLUG IN A FOREIGN MARKET -> the market's own slug, 301.
+			//
+			// The page finds a product by its base slug in every market, so it was served at a
+			// second, untranslated address. The read the preflight just made (the page's own) knows
+			// the market's slug, so a crawler is told here, with a real status and no question to
+			// Saleor beyond the one the page asks anyway. A visitor is moved by the page itself,
+			// which cannot set a status (`[productSlug]/page.tsx`). See `lib/saleor/base-slug-alias.ts`.
+			if (answer.verdict === "found" && answer.movedTo && answer.movedTo !== decision.slug) {
+				const url = request.nextUrl.clone();
+				url.pathname = "/" + first + "/" + answer.movedTo;
+				const moved = NextResponse.redirect(url, 301);
+				moved.headers.set("x-maky-preflight", preflight);
+				return moved;
 			}
 		}
 	}

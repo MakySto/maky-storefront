@@ -60,6 +60,18 @@ describe("/api/internal/product-outcome", () => {
 		expect(res.headers.get("cache-control")).toBe("private, no-store");
 	});
 
+	it("adds the market's own slug when the product was asked for by its Slovak one, and only then", async () => {
+		const sk = "snehove-retaze-snowdrive-pilot-pro-xl-s-celnou-montazou-n16283";
+		const de = "schneeketten-snowdrive-pilot-pro-xl-mit-frontmontage-n16283";
+		getProductOutcome.mockResolvedValue({ status: "found", resource: { slug: de, baseSlug: sk } });
+
+		expect(await (await call(`slug=${sk}&channel=de-eur`)).json()).toEqual({ status: "found", movedTo: de });
+		expect(await (await call(`slug=${de}&channel=de-eur`)).json()).toEqual({ status: "found" });
+
+		getProductOutcome.mockResolvedValue({ status: "found", resource: { slug: sk, baseSlug: sk } });
+		expect(await (await call(`slug=${sk}&channel=sk-eur`)).json()).toEqual({ status: "found" });
+	});
+
 	it("reports not-found as such", async () => {
 		getProductOutcome.mockResolvedValue({ status: "not-found" });
 		expect(await (await call("slug=x&channel=sk-eur")).json()).toEqual({ status: "not-found" });

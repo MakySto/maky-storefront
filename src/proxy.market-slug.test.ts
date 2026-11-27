@@ -57,10 +57,6 @@ const AT_ENTRY = { cfm_product_id: CFM_ID, language_code: "DE_AT", old_slug: OLD
 
 beforeEach(() => {
 	vi.stubEnv("NEXT_PUBLIC_SALEOR_API_URL", ENDPOINT);
-	// This file counts the questions the MAP makes the proxy ask. The other question a foreign
-	// product URL raises (is this the Slovak base slug?) has its own file,
-	// `proxy.base-slug-redirect.test.ts`, and is stood down here so the counts stay about the map.
-	vi.stubEnv("MAKY_BASE_SLUG_REDIRECT", "off");
 	resetRouteExistenceStateForTests();
 	resetMarketSlugRedirectsForTests();
 });
