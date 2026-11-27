@@ -1,5 +1,6 @@
 "use server";
 
+import { REVERSE_MAP } from "@/lib/channel-map";
 import { catalogLanguageForChannel, loadCatalogView } from "./resolve";
 import { vehiclePageHref } from "./vehicle-href";
 
@@ -25,7 +26,7 @@ export async function loadVehiclePagePath(
 	try {
 		const language = catalogLanguageForChannel(channel);
 		if (!language) return null;
-		const view = await loadCatalogView(language);
+		const view = await loadCatalogView(language, REVERSE_MAP[channel] ?? channel);
 		if (!view.ready) return null;
 		if ((view.tree.applicationsOf.get(generationId)?.length ?? 0) === 0) return null;
 		return await vehiclePageHref(channel, generationId);
