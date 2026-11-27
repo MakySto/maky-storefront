@@ -821,6 +821,51 @@ export function matchWindow(window: FitmentWindow, year: number, month?: number)
 }
 
 /**
+ * The window as far as the car was built: the application's window cut to the generation's years
+ * of production. What a shopper is TOLD about the years of a set.
+ *
+ * The window comes from the set maker's application sheet and the generation's years are the years
+ * the car was made, and CFM keeps the two as they are (CFM, 2026-11-27: a window is not changed when
+ * the generation's years are). A Thule window 2021-2024 for a Santa Fe built until 2023, or an open
+ * window "od 2018" for an Audi Q3 F3 that CFM now ends in 2025, would otherwise be printed as years
+ * of a car that was never built in them. So the years the shop shows are the intersection.
+ *
+ * It only ever narrows (rule 2 in the header still holds: production years never widen a window).
+ * A boundary that is cut lands on the generation's year and loses its month, because the generation
+ * states no month (`startPrecision`/`endPrecision` say "year" and `reconciledToGeneration` says it
+ * was cut); a boundary inside the production years is kept exactly, month included. A generation
+ * still in production cuts nothing at the end.
+ *
+ * The decision does not need it: the selector offers only years the generation was built in
+ * (`selector-plan.ts`) and the garage refuses any other (`garage/actions.ts`, `garage/retired.ts`), and
+ * for such a year this window and the source's answer `matchWindow` alike (`production-window.test.ts`).
+ *
+ * A window that shares NO year with the generation is returned as the source gave it: there is no
+ * year to cut it to, and a guess would be worse than the source's own words. The validator reports
+ * it (`window.to.year … precedes` / `exceeds`), and no year a shopper can select falls inside it.
+ */
+export function windowWithinProduction(
+	window: FitmentWindow,
+	generation: Pick<VehicleGeneration, "productionYearFrom" | "productionYearTo"> | undefined,
+): FitmentWindow {
+	if (!generation) return window;
+	const { productionYearFrom: from, productionYearTo: to } = generation;
+	if ((to !== null && window.from.year > to) || (window.to !== null && window.to.year < from)) return window;
+
+	const cutStart = window.from.year < from;
+	const cutEnd = to !== null && (window.to === null || window.to.year > to);
+	if (!cutStart && !cutEnd) return window;
+	return {
+		...window,
+		from: cutStart ? { year: from } : window.from,
+		startPrecision: cutStart ? "year" : window.startPrecision,
+		to: cutEnd ? { year: to } : window.to,
+		endPrecision: cutEnd ? "year" : window.endPrecision,
+		reconciledToGeneration: true,
+	};
+}
+
+/**
  * Is this dataset a simulation rather than a statement about real stock?
  *
  * Two independent ways of being one, and both must be honoured at every gate:

@@ -9,7 +9,7 @@ import { resolveVehicleOutcome } from "@/lib/fitment/resolve";
 import { isDemoDataset, resolveFitmentOffers } from "@/lib/fitment/offers";
 import { renderConditions } from "@/lib/fitment/conditions";
 import { monthCaveatOf, monthCaveatText } from "@/lib/fitment/month-caveat";
-import { describeOfferFit, offerFitsByProduct } from "@/lib/fitment/offer-fit";
+import { describeOfferFit, offerFitsByProduct, productionYearsOf } from "@/lib/fitment/offer-fit";
 import { datasetMakeNames, splitSetTitle } from "@/lib/fitment/set-title";
 import { setVehicleOf, type SetVehicle } from "@/lib/fitment/set-vehicle";
 import { ListingViewSwitch } from "@/ui/components/listing/listing-view-switch";
@@ -130,7 +130,9 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 		});
 		// The roof and the years of the application this set was matched through — the selection's own
 		// answer, so the card says which window and which roof the fit rests on.
-		const fits = offerFitsByProduct(match?.result.matched ?? []).get(offer.saleorProductId);
+		const fits = offerFitsByProduct(match?.result.matched ?? [], undefined, productionYearsOf(dataset)).get(
+			offer.saleorProductId,
+		);
 		const fit = describeOfferFit(fits, tf, ROOF_LABEL_KEY);
 		const vehicles = (fits?.[0]?.generationIds ?? [])
 			.map((generationId) => setVehicleOf(dataset, generationId, catalogLanguageForChannel(channel)))

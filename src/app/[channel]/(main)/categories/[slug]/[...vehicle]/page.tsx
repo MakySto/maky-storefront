@@ -36,7 +36,7 @@ import { resolveFitmentOffers, uniqueProductRefs } from "@/lib/fitment/offers";
 import { datasetMakeNames } from "@/lib/fitment/set-title";
 import { productSetFacts } from "@/lib/fitment/set-facts";
 import { setVehicleOf, type SetVehicle } from "@/lib/fitment/set-vehicle";
-import { offerFitsByProduct } from "@/lib/fitment/offer-fit";
+import { offerFitsByProduct, productionYearsOf } from "@/lib/fitment/offer-fit";
 import {
 	applicationsForYear,
 	parseVehicleView,
@@ -296,7 +296,7 @@ async function Offers({
 			makes={dataset ? datasetMakeNames(dataset) : undefined}
 			vehicles={vehicles}
 			facts={dataset ? productSetFacts(dataset) : undefined}
-			fits={offerFitsByProduct(applications)}
+			fits={offerFitsByProduct(applications, undefined, dataset ? productionYearsOf(dataset) : undefined)}
 			view={{ ...chosen, years: yearsOnOffer(every, span, currentYear), path }}
 		/>
 	);

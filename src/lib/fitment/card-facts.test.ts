@@ -210,7 +210,9 @@ describe("attachSetFacts with a set made for one car in several versions", () =>
 		// the second window is for another generation, which the name does not say
 		addWindow(dataset, 2023, null).generationId = PASSAT_VARIANT_B9;
 		const result = await attach(dataset);
-		expect(result.fit?.years).toBe("2008 – 2015, od 2023");
+		// The B9 is built from 2024, so its window "od 2023" is told from the first year the car was made
+		// (`windowWithinProduction`, CFM 2026-11-27).
+		expect(result.fit?.years).toBe("2008 – 2015, od 2024");
 		expect(result.setTitle).toEqual({ model: "Nordrive Helio Black", vehicle: "AUDI A4 Avant B8" });
 	});
 
