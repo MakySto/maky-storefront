@@ -284,11 +284,18 @@ function startWords(index: ShelfIndex, pieces: readonly Piece[]): readonly strin
 	return asked.every((word) => index.makers.has(word) || isNumberWord(word)) ? [] : asked;
 }
 
+/**
+ * Does the name begin with the words? A count inside the name is passed over, unless a number was
+ * asked for: "Nosič 2 bicyklov Thule EasyFold" begins with "nosič bicyklov" as much as "Nosič
+ * bicyklov Thule Epos" does (live, 2026-11-27: the carriers that say how many bikes they take
+ * fell behind the others for "nosič").
+ */
 function beginsWith(name: readonly string[], asked: readonly string[]): boolean {
+	const own = asked.some(isNumberWord) ? name : name.filter((word) => !isNumberWord(word));
 	return (
 		asked.length > 0 &&
-		asked.length <= name.length &&
-		asked.every((word, position) => wordGrade(word, name[position]!) >= SAME_WORD)
+		asked.length <= own.length &&
+		asked.every((word, position) => wordGrade(word, own[position]!) >= SAME_WORD)
 	);
 }
 

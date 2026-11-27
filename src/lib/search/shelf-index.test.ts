@@ -70,6 +70,15 @@ describe("the Slovak shelf", () => {
 		expect(addOn).toBeGreaterThan(named);
 	});
 
+	it("passes over a count in the name: a carrier for two bikes is a bike carrier", () => {
+		// After PR 160 "nosič" listed the carriers named "Nosič bicykla…" before every "Nosič 2 bicyklov…".
+		expect(names(sk, "nosič")[0]).toBe("Nosič 2 bicyklov Spinder SX2");
+		const found = names(sk, "nosič bicyklov", { preferRoots: new Set(["nosice-bicyklov"]) });
+		expect(found[0]).toBe("Nosič 2 bicyklov Spinder SX2");
+		// A number that was asked for is read as it stands.
+		expect(names(sk, "nosič 2 bicyklov")[0]).toBe("Nosič 2 bicyklov Spinder SX2");
+	});
+
 	it("does not read a maker alone as what the product is", () => {
 		// "Thule Allax S" is a dog crate; its name begins with the maker as every Thule accessory's does.
 		expect(names(sk, "thule")[0]).toBe("Nosič bicyklov Thule Epos 2 - 978");

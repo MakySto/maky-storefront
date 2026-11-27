@@ -119,21 +119,21 @@ describe("a search answered from the shop's own index", () => {
 		const first = await answerSearch({ query: "nosič", channel: "sk-eur" });
 		expect(first.result.products).toHaveLength(20);
 		expect(first.result.pagination).toMatchObject({
-			totalCount: 26,
+			totalCount: 27,
 			hasNextPage: true,
 			hasPreviousPage: false,
 			nextCursor: "shelf.20",
 		});
 
 		const second = await answerSearch({ query: "nosič", channel: "sk-eur", cursor: "shelf.20" });
-		expect(second.result.products).toHaveLength(6);
+		expect(second.result.products).toHaveLength(7);
 		expect(second.result.pagination).toMatchObject({
 			hasNextPage: false,
 			hasPreviousPage: true,
 			prevCursor: "shelf.0",
 		});
 		const seen = new Set([...first.result.products, ...second.result.products].map((product) => product.id));
-		expect(seen.size).toBe(26);
+		expect(seen.size).toBe(27);
 
 		// Past the end is the last page there is, never an empty one.
 		const beyond = await answerSearch({ query: "nosič", channel: "sk-eur", cursor: "shelf.4000" });
@@ -355,7 +355,7 @@ describe("a search that names a car", () => {
 
 		// A bike carrier for an Octavia is a bike carrier: no roof-rack page, and the carriers listed.
 		expect(answer.vehicles).toEqual([]);
-		expect(answer.result.products[0]!.name).toMatch(/^Nosič bicyk/);
+		expect(answer.result.products[0]!.name).toMatch(/^Nosič (?:\d+ )?bicyk/);
 		expect(mocks.searchProducts).not.toHaveBeenCalled();
 	});
 
