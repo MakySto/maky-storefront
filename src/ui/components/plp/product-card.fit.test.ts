@@ -39,18 +39,18 @@ describe("ProductCard — what the set is for", () => {
 	it("prints the roof and the years from the application", () => {
 		const html = renderToStaticMarkup(
 			createElement(ProductCard, {
-				product: { ...product, fit: { roof: "Pozdĺžniky nad strechou", years: "2011 – 2013" } },
+				product: { ...product, fit: { roof: "Klasické lyžiny", years: "2011 – 2013" } },
 			}),
 		);
 		expect(html).toContain('data-testid="card-fit"');
-		expect(html).toContain("Strecha: Pozdĺžniky nad strechou");
+		expect(html).toContain("Strecha: Klasické lyžiny");
 		expect(html).toContain("Roky: 2011 – 2013");
 	});
 
 	it("never says the set FITS — a statement about the set, not about anybody's car", () => {
 		const html = renderToStaticMarkup(
 			createElement(ProductCard, {
-				product: { ...product, fit: { roof: "Holá strecha", years: "od 2024" } },
+				product: { ...product, fit: { roof: "Hladká strecha", years: "od 2024" } },
 			}),
 		);
 		const line = html.match(/data-testid="card-fit"[^>]*>(.*?)<\/p>/s)?.[1] ?? "";
@@ -80,7 +80,7 @@ describe("ProductCard — a set made for one car in several versions", () => {
 		...product,
 		name: "Strešný kôš Nordrive Kargo Rack pre Mercedes-Benz trieda T W420 (od 2022), 180 × 135 × 12 cm, NKR0302+N30423",
 		productCode: "NKR0302+N30423",
-		fit: { roof: "Pevné body", years: "2022 – 2026, od 2023" },
+		fit: { roof: "Fixačné body", years: "2022 – 2026, od 2023" },
 		setTitle: { model: "Strešný kôš Nordrive Kargo Rack", vehicle: "Mercedes-Benz Trieda T W420" },
 	};
 
@@ -105,7 +105,7 @@ describe("ProductCard — the line over a set's name on a phone", () => {
 		name: "Strešný nosič Nordrive Helio Black BMW Rad 5 Touring G31 (2017–2024) — Integrované lyžiny",
 		brand: "Nordrive",
 		category: { id: "c1", name: "Nordrive strešné nosiče", slug: "nordrive-stresne-nosice" },
-		fit: { roof: "Integrované pozdĺžniky", years: "2017 – 2024" },
+		fit: { roof: "Integrované lyžiny", years: "2017 – 2024" },
 		setTitle: { model: "Nordrive Helio Black", vehicle: "BMW Rad 5 Touring G31" },
 	};
 

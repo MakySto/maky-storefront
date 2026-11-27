@@ -273,8 +273,8 @@ describe("the functional hole this all exists to close", () => {
 		expect(result.verdict).toBe("VERIFIED_FIT");
 	});
 
-	it("stays honest when the shopper says 'a different type' — no roof is substituted", () => {
-		// "Iný typ" and "Neviem rozpoznať" both leave roofType unset. The answer is
+	it("stays honest when the shopper goes on without a roof type — no roof is substituted", () => {
+		// "Pokračovať bez typu strechy" leaves roofType unset. The answer is
 		// "we cannot confirm", never a fit derived from the only roof we stock.
 		const result = resolveFitment(dataset, selection(), { saleorProductId: "test-product-set-a" });
 		expect(result.verdict).toBe("AMBIGUOUS");
