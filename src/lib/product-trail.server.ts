@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 
 import { baseSlugForCategoryId, categoryUrlFor } from "@/config/category-routes";
 import { getLocaleFromChannel } from "@/config/locale";
-import { marketHref } from "@/lib/channel-map";
+import { REVERSE_MAP, marketHref } from "@/lib/channel-map";
 import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { loadCatalogView } from "@/lib/catalog-content/resolve";
 import {
@@ -93,7 +93,7 @@ async function vehicleTrail(
 	const generationIds = vehiclesOfProduct(dataset, product.id);
 	if (generationIds.length === 0) return null;
 
-	const view = await loadCatalogView(language);
+	const view = await loadCatalogView(language, REVERSE_MAP[channel] ?? channel);
 	if (!view.ready) return null;
 	const node = commonVehicleNode(view.tree, generationIds);
 	if (!node) return null;
