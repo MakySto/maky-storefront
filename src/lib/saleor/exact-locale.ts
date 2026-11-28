@@ -1,4 +1,5 @@
 import { DEFAULT_LOCALE } from "@/config/locale";
+import { localizedPhotoAlt } from "@/lib/photo-alt";
 
 export const SOURCE_LOCALE = DEFAULT_LOCALE;
 
@@ -129,12 +130,22 @@ function localizeAttribute(attribute: ProductAttribute, locale: string): Product
 	};
 }
 
+/**
+ * Foreign-market alt for a gallery: the translated name on the main photo, and on the others the name plus the
+ * photo's description from CFM's dictionary (`src/lib/photo-alt`). The Slovak alt is read for its tail only and is
+ * never shown; what the dictionary does not know becomes `name – <photo word> N`, and a language without a
+ * dictionary entry keeps the empty alt.
+ */
 function localizedMedia<T extends { url: string; alt?: string | null }>(
 	media: readonly T[] | null | undefined,
 	productName: string,
+	locale: string,
 ): readonly T[] | null | undefined {
 	if (!media) return media;
-	return media.map((item, index) => ({ ...item, alt: index === 0 ? productName : "" }));
+	return media.map((item, index) => ({
+		...item,
+		alt: localizedPhotoAlt(item.alt, productName, index, locale) ?? "",
+	}));
 }
 
 /**
@@ -188,7 +199,7 @@ export function resolveExactLocaleProduct<T extends ProductLike>(
 		}
 		return {
 			...variant,
-			media: localizedMedia(variant.media, localizedName),
+			media: localizedMedia(variant.media, localizedName, locale),
 			selectionAttributes: selectionAttributes as ProductAttribute[],
 			nonSelectionAttributes: nonSelectionAttributes as ProductAttribute[],
 		};
@@ -205,7 +216,7 @@ export function resolveExactLocaleProduct<T extends ProductLike>(
 		category,
 		attributes: attributes as ProductAttribute[],
 		thumbnail: product.thumbnail ? { ...product.thumbnail, alt: localizedName } : product.thumbnail,
-		media: localizedMedia(product.media, localizedName),
+		media: localizedMedia(product.media, localizedName, locale),
 		variants: variants as NonNullable<T["variants"]>,
 	} as T;
 }

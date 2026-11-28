@@ -1,0 +1,21 @@
+{
+  "profile": "maky-photo-alt-dictionary/1",
+  "what": "The photo-alt dictionary CFM builds with `manage.py photo_alt_dictionary --write`, copied byte for byte from CFM master. It maps every Slovak tail of a gallery alt (`name – tail`) to the tail in 9 languages (cs de pl hu ro fr it es en) and the word for \"photo\"; src/lib/photo-alt/index.ts builds the foreign-market alt from it. A newer dictionary is copied in the same way: replace the file and update this record.",
+  "cfm": {
+    "repository": "MakySto/CarFitManager-4",
+    "pr": 156,
+    "merge_commit": "1d35d13e",
+    "path": "backend/artifacts/storefront/photo_alt_dictionary.json",
+    "git_blob_sha1": "75c15a08087e6c1999c2e525665972c430118ee2",
+    "producer": "backend/apps/saleor_sync/maky_alt_foreign.py (pattern: localize_alt)"
+  },
+  "file": {
+    "photo_alt_dictionary.json": {
+      "schema": "maky-photo-alt-dictionary/1",
+      "bytes": 445970,
+      "sha256": "b783bbd9752ca4667d2e3a5753849bc592d68cfe0e8c5838688ebf312f251c07",
+      "self_sha256": "8ca4daa84a4939f2018add90fbef2fa66d5ec132f59c15609712524b234a8146"
+    }
+  },
+  "rule": "self_sha256 is the SHA-256 of the JSON with sorted keys, indent 1, ensure_ascii off and without the self_sha256 key."
+}
