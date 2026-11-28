@@ -67,7 +67,7 @@ describe("exact-locale product boundary", () => {
 		expect(product?.slug).toBe("dachtraeger");
 		expect(product?.attributes[0].attribute.name).toBe("Dachtyp");
 		expect(product?.attributes[0].values[0].name).toBe("Fixpunkte");
-		expect(product?.media.map((item) => item.alt)).toEqual(["Dachträger", ""]);
+		expect(product?.media.map((item) => item.alt)).toEqual(["Dachträger", "Dachträger – Foto 2"]);
 		expect(product?.variants[0].nonSelectionAttributes[0].attribute.name).toBe("Befestigung");
 	});
 
@@ -160,5 +160,56 @@ describe("media ALT and the source locale", () => {
 		const product = resolveExactLocaleProduct(translatedProduct(), "de-DE");
 
 		expect(product?.media?.map((item) => item.alt)).not.toContain("Slovenský alt");
+	});
+
+	// FIXTURE: Slovak alts of the shape CFM writes (`name – tail`); the dictionary itself is CFM's real file.
+	const withCfmAlts = () => {
+		const product = translatedProduct();
+		const media = [
+			{ url: "https://img/1.webp", alt: "Strešný nosič – fotka výrobku", type: "IMAGE" },
+			{ url: "https://img/2.webp", alt: "Strešný nosič – rozmery", type: "IMAGE" },
+			{ url: "https://img/3.webp", alt: "Strešný nosič – fotka 3", type: "IMAGE" },
+			{ url: "https://img/4.webp", alt: "ručne písaný alt", type: "IMAGE" },
+		];
+		return { ...product, media, variants: [{ ...product.variants[0], media }] };
+	};
+
+	it("builds a foreign ALT from the translated name and CFM's dictionary", () => {
+		const product = resolveExactLocaleProduct(withCfmAlts(), "de-DE");
+		const expected = ["Dachträger", "Dachträger – Abmessungen", "Dachträger – Foto 3", "Dachträger – Foto 4"];
+
+		expect(product?.media?.map((item) => item.alt)).toEqual(expected);
+		expect(product?.variants?.[0]?.media?.map((item) => item.alt)).toEqual(expected);
+		expect(product?.thumbnail?.alt).toBe("Dachträger");
+	});
+
+	it("reads the language of the market's locale: de-AT is German, en-CA is English", () => {
+		const at = resolveExactLocaleProduct(withCfmAlts(), "de-AT");
+		const ca = resolveExactLocaleProduct(withCfmAlts(), "en-CA");
+
+		expect(at?.media?.[1]?.alt).toBe("Dachträger – Abmessungen");
+		expect(ca?.media?.[1]?.alt).toBe("Dachträger – dimensions");
+		expect(ca?.media?.[3]?.alt).toBe("Dachträger – photo 4");
+	});
+
+	it("shows no Slovak ALT on any foreign market", () => {
+		for (const locale of [
+			"cs-CZ",
+			"de-DE",
+			"de-AT",
+			"pl-PL",
+			"hu-HU",
+			"it-IT",
+			"fr-FR",
+			"es-ES",
+			"ro-RO",
+			"en-US",
+			"en-CA",
+		]) {
+			const product = resolveExactLocaleProduct(withCfmAlts(), locale);
+			const alts = (product?.media ?? []).map((item) => item.alt ?? "");
+			expect(alts.join("|")).not.toMatch(/Strešný|nosič|ručne|rozmery/);
+			expect(new Set(alts).size).toBe(alts.length);
+		}
 	});
 });

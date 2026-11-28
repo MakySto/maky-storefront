@@ -71,3 +71,8 @@ src/checkout/lib/b2b/maky-b2b-v1.graphql
 # verbatim; its SHA-256, git blob id and seal are recorded in PROVENANCE.json and re-verified by
 # src/lib/tyre-size/size-index.test.ts, and CFM pins the same bytes. Reformatting changes them.
 src/lib/tyre-size/data/
+
+# CFM's photo-alt dictionary (maky-photo-alt-dictionary/1) and its provenance record, copied in verbatim; the file
+# hash and the self_sha256 seal are recorded in PROVENANCE.json and recomputed by src/lib/photo-alt/photo-alt.test.ts.
+# Reformatting changes the bytes.
+src/lib/photo-alt/data/
