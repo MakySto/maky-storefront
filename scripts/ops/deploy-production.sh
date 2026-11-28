@@ -94,6 +94,32 @@ CATEGORIES_WAIT_S="${CATEGORIES_WAIT_S:-45}"
 CATALOG_PARITY_WAIT_S="${CATALOG_PARITY_WAIT_S:-90}"
 CATALOG_PARITY_POLL_S="${CATALOG_PARITY_POLL_S:-3}"
 
+# The bridge shares Saleor with the live process, which is serving every customer while the bridge boots and is gated.
+# Measured on the deploy of PR 160 + 161 (2026-11-27, 23:11 to 23:39 UTC): the box's CPU was not the limit (load at most
+# 1.21 on 4 cores), Saleor was. Two processes with a queue of 6 slots each put up to 12 queries on it at once, and the
+# bridge's own sitemap warm-up walked the catalogue of all twelve markets for 684 s while customers were still on the live
+# process: 59 product-presence deadlines on the live site in that window, 25 of them starved in the queue, and 19 answers
+# 503 to crawlers while the bridge warmed its categories. So the bridge is started lighter than the live process:
+#
+#   BRIDGE_SALEOR_MAX_CONCURRENT   its Saleor queue (SALEOR_MAX_CONCURRENT_REQUESTS). 3 by default: 3 + 6 instead of
+#                                  6 + 6 at the boot warm-ups, and enough for the ~12 minutes customers are on it
+#                                  (the live queue does not fill when the site is quiet). Empty: what .env says.
+#   BRIDGE_SITEMAP_PREWARM         MAKY_SITEMAP_PREWARM for the bridge. 0 by default: no twelve catalogue walks on the
+#                                  bridge. A crawler that asks the bridge for a product shard walks that one market on
+#                                  demand, as a request on any process does. Empty: what .env says.
+#   BRIDGE_SITEMAP_GATE            what the gate on the bridge reads of the sitemap. `index` by default: the index and
+#                                  one shard (the product shard of the smoke market, which the representative PDP is
+#                                  taken from anyway). Every shard and the floor MIN_SITEMAP_URLS are still read, on the
+#                                  live process after the swap, before the commit point: a sitemap that is short or
+#                                  broken there rolls back as before. `full`: every shard on the bridge too (the old way).
+#
+# Both values are given to the bridge in the environment it is registered with (pm2_clean), where they win over .env,
+# because Next does not overwrite a variable that is already set. The live process is registered without them and
+# runs with what .env says.
+BRIDGE_SALEOR_MAX_CONCURRENT="${BRIDGE_SALEOR_MAX_CONCURRENT-3}"
+BRIDGE_SITEMAP_PREWARM="${BRIDGE_SITEMAP_PREWARM-0}"
+BRIDGE_SITEMAP_GATE="${BRIDGE_SITEMAP_GATE:-index}"
+
 DRY_RUN=0
 REHEARSE=0
 MODE="${DEPLOY_MODE:-auto}"
@@ -123,6 +149,9 @@ declare -A CHECKED_BUILD_ASSETS=()
 # target from here: classic and restart gate $LOCAL_URL / $APP_DIR, the bridge gates $BRIDGE_URL / $BUILD_DIR.
 GATE_URL="$LOCAL_URL"
 GATE_DIR="$APP_DIR"
+# How much of the sitemap the gate reads: `full` (every shard, and the floor) everywhere but on the bridge, which reads
+# what BRIDGE_SITEMAP_GATE says (gate_bridge).
+SITEMAP_GATE="full"
 
 # --- state for the build-aside flows -----------------------------------------------------
 FLOW=""                 # classic | restart | bridge | rehearse — resolved after preflight
@@ -311,6 +340,7 @@ restore() {
 			err "the bridge could not be put in front either — the site may be down"
 		fi
 		err "$BUILD_DIR must stay until $PM2_APP is repaired: pm2 logs $PM2_APP (or register it again: $(register_hint)), then $NGINX_TOOL set canonical-only"
+		[[ -z "$(bridge_env)" ]] || err "the bridge was started lighter on Saleor than $PM2_APP ($(bridge_env | paste -sd' ' -)): it carries customers through a repair, not as the site for good"
 	elif (( BRIDGE_UP == 0 )); then
 		remove_scratch || true
 	fi
@@ -719,8 +749,38 @@ write_meta() { write_meta_in "$APP_DIR" "$(git -C "$APP_DIR" rev-parse HEAD)"; }
 #
 # So both processes are registered the same way, from nothing but what starting the app takes. Everything the app is
 # configured with is in .env, which Next reads itself when the process starts.
+#
+# Leading NAME=value arguments are added to that environment, and only those: the bridge's lighter settings
+# (bridge_env), never anything of the calling shell's.
 pm2_clean() {
-	env -i HOME="$HOME" PATH="$PATH" LANG=C.UTF-8 ${PM2_HOME:+PM2_HOME="$PM2_HOME"} pm2 "$@"
+	local -a extra=()
+	while (( $# > 0 )) && [[ "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; do
+		extra+=("$1")
+		shift
+	done
+	env -i HOME="$HOME" PATH="$PATH" LANG=C.UTF-8 ${PM2_HOME:+PM2_HOME="$PM2_HOME"} ${extra[@]+"${extra[@]}"} pm2 "$@"
+}
+
+# The NAME=value pairs the bridge is registered with on top of the clean environment, one a line: see
+# BRIDGE_SALEOR_MAX_CONCURRENT and BRIDGE_SITEMAP_PREWARM. Settings, not secrets, so they may be printed.
+bridge_env() {
+	[[ -z "$BRIDGE_SALEOR_MAX_CONCURRENT" ]] || printf 'SALEOR_MAX_CONCURRENT_REQUESTS=%s\n' "$BRIDGE_SALEOR_MAX_CONCURRENT"
+	[[ -z "$BRIDGE_SITEMAP_PREWARM" ]] || printf 'MAKY_SITEMAP_PREWARM=%s\n' "$BRIDGE_SITEMAP_PREWARM"
+}
+
+# Refuses settings for the bridge that would not do what they say, before anything is started.
+check_bridge_settings() {
+	if [[ -n "$BRIDGE_SALEOR_MAX_CONCURRENT" && ! "$BRIDGE_SALEOR_MAX_CONCURRENT" =~ ^[1-9][0-9]*$ ]]; then
+		die "BRIDGE_SALEOR_MAX_CONCURRENT must be a whole number of 1 or more, or empty for what .env says; got '$BRIDGE_SALEOR_MAX_CONCURRENT'"
+	fi
+	case "$BRIDGE_SITEMAP_PREWARM" in
+		""|0|1) ;;
+		*) die "BRIDGE_SITEMAP_PREWARM must be 0, 1 or empty for what .env says; got '$BRIDGE_SITEMAP_PREWARM'" ;;
+	esac
+	case "$BRIDGE_SITEMAP_GATE" in
+		index|full) ;;
+		*) die "BRIDGE_SITEMAP_GATE must be index or full; got '$BRIDGE_SITEMAP_GATE'" ;;
+	esac
 }
 
 # Registers $PM2_APP afresh: `npm start -- -p <port>` in $APP_DIR, started on the spot. $1 and $2 are the stdout and
@@ -813,10 +873,14 @@ CREDENTIAL_NAMES_RE='^(CLAUDE|ANTHROPIC|OPENAI|AWS|GH|GITHUB|SSH|GPG)(_|$)|TOKEN
 # like credentials and are not .env's, which of them are .env's and so hide its value (the value the process was started
 # with wins). Names only, never a value. $1 says who, $2 is the directory it runs in. Warns, never fails: the process
 # has passed its gate, and what it was started with is a finding for whoever reads this, not a reason to throw a build away.
+#
+# $3, when given, is the NAME=value pairs this deploy set on purpose (bridge_env), one a line. They are not counted as
+# hiding .env, since winning over it is what they are for; they are said on a line of their own, with their values
+# (settings, never secrets), and one that did not reach the process is a warning.
 report_environment() {
-	local who="$1" dir="$2" pid name names total=0
-	local -a shadow=() foreign=()
-	local -A in_dotenv=()
+	local who="$1" dir="$2" deliberate="${3:-}" pid name names total=0 pair
+	local -a shadow=() foreign=() meant=() missing=()
+	local -A in_dotenv=() on_purpose=() present=()
 	if ! pid=$(server_pid_in "$dir"); then
 		info "environment of $who: no next-server found in $dir"
 		return 0
@@ -828,20 +892,36 @@ report_environment() {
 	while IFS= read -r name; do
 		[[ -z "$name" ]] || in_dotenv["$name"]=1
 	done < <(dotenv_names)
+	while IFS= read -r pair; do
+		[[ -z "$pair" ]] || on_purpose["${pair%%=*}"]=1
+	done <<<"$deliberate"
 	while IFS= read -r name; do
 		[[ -n "$name" ]] || continue
 		total=$((total + 1))
-		if [[ -n "${in_dotenv[$name]:-}" ]]; then
+		present["$name"]=1
+		if [[ -n "${on_purpose[$name]:-}" ]]; then
+			continue
+		elif [[ -n "${in_dotenv[$name]:-}" ]]; then
 			shadow+=("$name")
 		elif grep -qiE "$CREDENTIAL_NAMES_RE" <<<"$name"; then
 			foreign+=("$name")
 		fi
 	done <<<"$names"
+	while IFS= read -r pair; do
+		[[ -n "$pair" ]] || continue
+		if [[ -n "${present[${pair%%=*}]:-}" ]]; then meant+=("$pair"); else missing+=("${pair%%=*}"); fi
+	done <<<"$deliberate"
 	if (( ${#foreign[@]} == 0 && ${#shadow[@]} == 0 )); then
 		info "environment of $who (pid $pid): $total names, none looks like a credential, none hides a value of .env"
-		return 0
+	else
+		info "environment of $who (pid $pid): $total names"
 	fi
-	info "environment of $who (pid $pid): $total names"
+	if (( ${#meant[@]} > 0 )); then
+		info "$who is given, on purpose and over .env: ${meant[*]}"
+	fi
+	if (( ${#missing[@]} > 0 )); then
+		warn "environment of $who: ${missing[*]} did not reach the process, which runs with what .env says instead"
+	fi
 	if (( ${#foreign[@]} > 0 )); then
 		warn "environment of $who: ${#foreign[@]} names look like credentials and are not .env's: ${foreign[*]} (names only; PM2 copies the environment of the shell that registers a process, CLAUDE.md §13.2.1)"
 	fi
@@ -1131,6 +1211,18 @@ gate_routing() {
 	new_tmp; body=$TMP_PATH
 	curl -fsS --max-time 25 "$GATE_URL/sitemap.xml" -o "$body" || die "/sitemap.xml did not respond"
 
+	if [[ "$SITEMAP_GATE" == "index" ]]; then
+		gate_sitemap_index_and_one_shard "$body"
+	else
+		gate_sitemap_full "$body"
+	fi
+	gate_client_navigation
+}
+
+# Every shard the index names, and the floor. On the live process (and on the bridge with BRIDGE_SITEMAP_GATE=full).
+gate_sitemap_full() {
+	local body="$1" count
+
 	# This used to read:
 	#     command -v xmllint >/dev/null && { xmllint --noout "$body" || die ... }
 	# xmllint is not installed on this box, so the `&&` short-circuited and the
@@ -1170,7 +1262,52 @@ PY
 	[[ "$count" =~ ^[0-9]+$ ]] || die "/sitemap.xml could not be counted: $count"
 	(( count >= MIN_SITEMAP_URLS )) || die "/sitemap.xml lists $count URLs, expected at least $MIN_SITEMAP_URLS"
 	info "sitemap: parsed as XML, $count <loc> elements"
+}
 
+# The bridge's sitemap check (BRIDGE_SITEMAP_GATE=index): the index answers, parses and names shards, and one shard of
+# it answers and parses with at least one <loc>. The shard is the first product shard of the smoke market, which
+# discover_representative_pdp has just read, so the bridge walks no market for this that it had not walked already; an
+# index without one gives its first shard. Reading every shard here meant walking the catalogue of all twelve markets on
+# the bridge while customers were still on the live process (684 s on 2026-11-27): that read, and the floor
+# MIN_SITEMAP_URLS, which applies to the whole sitemap and not to one shard, are left to the live process after the swap,
+# still before the commit point.
+gate_sitemap_index_and_one_shard() {
+	local body="$1" market result
+	market="${SMOKE_PATH#/}"
+	market="${market%%/*}"
+	result=$(python3 - "$body" "$GATE_URL" "$market" <<'PY' 2>&1
+import sys, urllib.parse, urllib.request, xml.etree.ElementTree as ET
+ns = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+root = ET.parse(sys.argv[1]).getroot()
+if root.tag != f"{ns}sitemapindex":
+    raise SystemExit("/sitemap.xml is not a sitemap index")
+shards = [loc.text.strip() for loc in root.findall(f"{ns}sitemap/{ns}loc") if loc.text and loc.text.strip()]
+if not shards:
+    raise SystemExit("the index names no shard")
+paths = [urllib.parse.urlsplit(shard).path for shard in shards]
+wanted = f"/sitemaps/{sys.argv[3]}-products-1.xml"
+path = wanted if wanted in paths else paths[0]
+url = sys.argv[2] + path
+with urllib.request.urlopen(url, timeout=240) as response:
+    if response.status != 200:
+        raise SystemExit(f"{url} answered {response.status}")
+    locs = len(ET.fromstring(response.read()).findall(f".//{ns}loc"))
+if locs == 0:
+    raise SystemExit(f"{path} lists no <loc>")
+print(f"{len(shards)} {path} {locs}")
+PY
+	) || die "/sitemap.xml or the shard it was checked by is broken: $result"
+	[[ "$result" =~ ^([0-9]+)\ (/[^ ]+)\ ([0-9]+)$ ]] || die "/sitemap.xml could not be read: $result"
+	info "sitemap: the index names ${BASH_REMATCH[1]} shards; ${BASH_REMATCH[2]} parsed, ${BASH_REMATCH[3]} <loc> elements"
+	if [[ "$FLOW" == "rehearse" ]]; then
+		info "sitemap: a rehearsal reads no other shard; a deploy reads every shard and the floor of $MIN_SITEMAP_URLS URLs on $PM2_APP after the swap (BRIDGE_SITEMAP_GATE=index)"
+	else
+		info "sitemap: every shard and the floor of $MIN_SITEMAP_URLS URLs are read on $PM2_APP after the swap, before the commit point (BRIDGE_SITEMAP_GATE=index)"
+	fi
+}
+
+gate_client_navigation() {
+	local path code
 	# Client-side navigation. The proxy matcher also fires for RSC and prefetch
 	# requests, so a change there can break in-app navigation while every plain
 	# page load still looks fine.
@@ -1330,7 +1467,9 @@ write_deploy_log() {
 		echo "snapshot: ${snap_name}${snap_mb:+ (${snap_mb} MB)}"
 		echo "disk:     $(df -Pm "$APP_DIR" | awk 'NR==2 {print $4}') MB free"
 		echo "flow:     ${FLOW}"
+		echo "took:     ${SECONDS}s from the start of the run to this record"
 		if [[ "$FLOW" == "bridge" ]]; then
+			echo "bridge:   $(bridge_plan)"
 			echo "downtime: 0s for customers ($PM2_APP itself was swapped in ${DOWNTIME}s, behind the bridge)"
 		else
 			echo "downtime: ${DOWNTIME}s"
@@ -1570,6 +1709,7 @@ preflight_aside() {
 		for cmd in ss env pkill; do
 			command -v "$cmd" >/dev/null || die "$cmd not found in PATH — the bridge depends on it"
 		done
+		check_bridge_settings
 	fi
 
 	[[ "$BUILD_DIR" == /*/* ]] || die "BUILD_DIR must be an absolute path with a parent directory, got '$BUILD_DIR'"
@@ -1810,7 +1950,14 @@ start_bridge() {
 	# bridge itself and was sent back to /sk by the proxy's own rule for the channel path. With no -H both sides say
 	# localhost. The price: the bridge listens on every interface for the minutes it runs, as the live process
 	# does on its port all the time.
-	pm2_clean start npm --name "$BRIDGE_APP" --cwd "$BUILD_DIR" \
+	#
+	# Lighter on Saleor than the live process, which serves every customer while this one boots: see
+	# BRIDGE_SALEOR_MAX_CONCURRENT and BRIDGE_SITEMAP_PREWARM.
+	local overrides
+	local -a extra=()
+	overrides=$(bridge_env)
+	[[ -z "$overrides" ]] || mapfile -t extra <<<"$overrides"
+	pm2_clean ${extra[@]+"${extra[@]}"} start npm --name "$BRIDGE_APP" --cwd "$BUILD_DIR" \
 		--output "$BRIDGE_OUT_LOG" --error "$BRIDGE_ERR_LOG" \
 		-- start -- -p "$BRIDGE_PORT" >/dev/null \
 		|| die "pm2 could not start the bridge"
@@ -1820,13 +1967,42 @@ start_bridge() {
 		die "the bridge did not answer on $BRIDGE_URL$SMOKE_PATH within ${READY_TIMEOUT_S}s$(ready_detail) (its log: $BRIDGE_ERR_LOG, $BRIDGE_OUT_LOG)"
 	fi
 	info "the bridge answers on $BRIDGE_URL$SMOKE_PATH"
-	report_environment "the bridge" "$BUILD_DIR"
+	report_environment "the bridge" "$BUILD_DIR" "$overrides"
+	report_bridge_queue
+}
+
+# What the bridge says its Saleor queue is, read from its own boot line (`[saleor-queue] max_concurrent=N`, printed by
+# src/instrumentation.ts), not from what it was given: the number it runs with is the one that reaches Saleor. Warns,
+# never fails: a bridge on the queue .env gives is what every deploy before this one ran.
+report_bridge_queue() {
+	local line seen="" waited=0
+	[[ -n "$BRIDGE_SALEOR_MAX_CONCURRENT" ]] || return 0
+	# The line comes at boot, before the port answers; a moment's grace for a log file that is written late.
+	while (( waited <= 5 )); do
+		line=$(bridge_log_text | grep -E '^\[saleor-queue\] max_concurrent=' | tail -n 1 || true)
+		[[ -z "$line" ]] || break
+		sleep 1
+		waited=$((waited + 1))
+	done
+	if [[ -z "$line" ]]; then
+		warn "the bridge printed no [saleor-queue] line: what its Saleor queue is cannot be read back"
+		return 0
+	fi
+	seen="${line#*max_concurrent=}"
+	seen="${seen%% *}"
+	if [[ "$seen" == "$BRIDGE_SALEOR_MAX_CONCURRENT" ]]; then
+		info "the bridge's Saleor queue: $seen slots (its own boot line)"
+	else
+		warn "the bridge's Saleor queue is $seen slots, not the $BRIDGE_SALEOR_MAX_CONCURRENT it was given (its own boot line: $line)"
+	fi
 }
 
 gate_bridge() {
 	GATE_URL="$BRIDGE_URL"
 	GATE_DIR="$BUILD_DIR"
+	SITEMAP_GATE="$BRIDGE_SITEMAP_GATE"
 	gate_artifact "the bridge, before any customer is sent to it"
+	SITEMAP_GATE="full"
 }
 
 # --- what the new process has to show before customers are sent to it -----------------------
@@ -2263,6 +2439,7 @@ print_plan() {
 			  export HEAD and copy node_modules into $BUILD_DIR; build there (nice $BUILD_NICE) while $PM2_APP keeps serving
 			  write $BUILD_DIR/.next/MAKY_DEPLOY_META, keep a clean copy of the build (without cache/turbopack: next start does not read it)
 			  start the bridge ($BRIDGE_APP, port $BRIDGE_PORT, clean environment), say which variable names it has, and run the whole gate on it
+			  the bridge, lighter on Saleor than $PM2_APP: $(bridge_plan)
 			  read back what the bridge printed at boot (the category list from Saleor, when this build reads it, up to ${CATEGORIES_WAIT_S}s)
 			  and check that it serves the catalogue release $PM2_APP serves, from /api/catalog/status (up to ${CATALOG_PARITY_WAIT_S}s)
 			  $NGINX_TOOL set bridge-primary                     <- customers move to the bridge
@@ -2286,12 +2463,21 @@ print_plan() {
 			  export HEAD and copy node_modules into $BUILD_DIR; build there (nice $BUILD_NICE) while $PM2_APP keeps serving
 			  write $BUILD_DIR/.next/MAKY_DEPLOY_META
 			  start the bridge ($BRIDGE_APP, port $BRIDGE_PORT, clean environment), say which variable names it has, and run the whole gate on it
+			  the bridge, lighter on Saleor than $PM2_APP: $(bridge_plan)
 			  read back what the bridge printed at boot and check that it serves the catalogue release $PM2_APP serves
 			  stop the bridge, remove $BUILD_DIR
 			$PM2_APP, nginx, .env and $DEPLOY_LOG are not touched.
 			EOF
 			;;
 	esac
+}
+
+# What the bridge is started with on top of the clean environment, and how much of the sitemap its gate reads, for the plan.
+bridge_plan() {
+	local overrides
+	overrides=$(bridge_env | paste -sd' ' -)
+	printf '%s; sitemap gate %s' "${overrides:-nothing over .env}" \
+		"$([[ "$BRIDGE_SITEMAP_GATE" == "index" ]] && echo "index and one shard (every shard on $PM2_APP after the swap)" || echo "every shard")"
 }
 
 # --- main ----------------------------------------------------------------------------

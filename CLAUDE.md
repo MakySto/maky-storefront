@@ -468,7 +468,9 @@ metadata    write .next/MAKY_DEPLOY_META (git sha, build id, timestamp); keep a 
 bridge      the same build on 127.0.0.1:3100 as a second PM2 app, maky-storefront-bridge, started
             like the live process (`next start -p 3100`, no `-H`, see §13.2.1) in a clean
             environment, logging to files of this run (/tmp/maky-deploy-<UTC>.log.bridge-out
-            and .bridge-err, which stay); the whole gate runs on it while nobody is sent there
+            and .bridge-err, which stay); lighter on Saleor than the live process (3 queue slots,
+            no sitemap warm-up, see below); the whole gate runs on it while nobody is sent there,
+            except that of the sitemap it reads the index and one shard
 show        what the gate cannot see, read from the bridge before anyone is sent to it: the category
             list it read from Saleor (`[live-categories] … loaded=yes`, when the build has the
             module) and the catalogue release it took from CFM (`/api/catalog/status` shows what
@@ -480,7 +482,8 @@ swap        wait for the requests the live process holds, pm2 stop maky-storefro
             the clean copy → .next, register maky-storefront afresh (pm2 delete, then pm2 start from
             a clean environment, see §13.2.1), wait for the port to answer, say what it was started with
 ─────────── the commit point ────────────────────────────────────────────────────
-gate        127.0.0.1:3000 — the same gate as on the bridge, now on the live process
+gate        127.0.0.1:3000 — the same gate as on the bridge, now on the live process, and every
+            sitemap shard with the floor `MIN_SITEMAP_URLS`
 types       the GraphQL types the build generated go into /opt/storefront/src, where the next
             preflight imports them from (build output, ignored by git)
 release     customers stay on the bridge until the live process serves the catalogue release the
@@ -535,6 +538,29 @@ cut off, or no connection at all), and a bridge also with its state as PM2 sees 
 connections and the headers of one more request: the first `--rehearse` on the box ended on "did not answer
 within 120s" and nothing else, and the cause was a redirect to itself. `--rehearse` runs both. The live process's
 own category read-back is a post-commit step like the market-state read-back (exit `75` names it).
+
+**The bridge is lighter on Saleor than the live process.** Both processes read the same Saleor, and
+while the bridge boots and is gated every customer is still on the live process. Measured on the deploy of
+PR 160 + 161 (2026-11-27, about 29 minutes): the box's CPU was not the limit (load at most 1.21 on 4 cores),
+Saleor was. Two queues of 6 slots put up to 12 queries on it at once, and the bridge's sitemap warm-up walked
+the catalogue of all twelve markets for 684 s: 59 product-presence deadlines on the live site in that window,
+25 of them starved in the queue, and 19 answers 503 to crawlers while the bridge warmed its categories. So the
+deploy registers the bridge with two settings over `.env` (in the clean environment, where they win, because
+Next does not overwrite a variable that is already set) and the live process without them:
+
+- `SALEOR_MAX_CONCURRENT_REQUESTS=3` (`BRIDGE_SALEOR_MAX_CONCURRENT`, empty for what `.env` says): 3 + 6 at
+  the boot warm-ups instead of 6 + 6. Customers are on the bridge for the length of the live gate; the live
+  queue does not fill when the site is quiet, a crawler surge on the bridge would. The deploy reads the
+  number back from the bridge's own `[saleor-queue] max_concurrent=N` boot line and warns when it differs.
+- `MAKY_SITEMAP_PREWARM=0` (`BRIDGE_SITEMAP_PREWARM`): no twelve catalogue walks on the bridge. A crawler
+  that asks it for a product shard walks that market on demand, as on any process.
+
+The gate on the bridge reads the sitemap index and one shard, the product shard of the smoke market that
+the representative PDP is taken from anyway (`BRIDGE_SITEMAP_GATE=index`; `full` is the old way). Every
+shard and the floor are read on the live process after the swap, before the commit point, so a sitemap
+that is short or broken there rolls back as before. A rehearsal therefore reads one shard. The output
+says what the bridge was given, and `/opt/DEPLOYMENTS.log` carries a `bridge:` line and `took:`, the
+seconds from the start of the run, for the next measurement.
 
 **Everything before the gate rolls back on failure. Nothing after it does.** Until nginx points at
 the bridge a failure changes nothing a customer can see: the bridge and the scratch tree are removed
@@ -716,7 +742,7 @@ What differs from a plain restart, and is accepted:
 ### 13.2.2 Changing the deploy scripts
 
 `deploy-production.sh` and `nginx-upstream.sh` have a regression suite that runs them for real:
-`pnpm test:deploy-box`, about eight minutes (95 cases). It is not part of `pnpm vitest run`, which the deploy
+`pnpm test:deploy-box`, about eight minutes (101 cases). It is not part of `pnpm vitest run`, which the deploy
 preflight runs on the live box before every deploy.
 
 The suite builds a whole box in a temporary directory (`src/lib/__fixtures__/deploy-world`): a git
@@ -741,6 +767,13 @@ process was registered from a shell that exported an agent session's variables, 
 registration see them go (in the bridge, restart and classic flows), the log paths of the old record kept, a
 daemon whose own environment leaks into what it starts, a `maky-smtp-app` with a `next-server` of its own, and PM2
 refusing to delete the old record.
+
+The lighter bridge has its own cases: the bridge is given its queue and no sitemap warm-up over an `.env` that
+holds production's values, the live process is not, the queue is read back from the bridge's boot line (and a
+daemon that changes it is reported), the bridge reads the index and one shard while the live process reads
+every shard after the swap (the fixture's app logs which port asked for which shard), a shard broken only on
+the live tree rolls the deploy back before the commit point, the old way is one setting away, a rehearsal
+reads one shard, and a setting that would not do what it says is refused before anything starts.
 
 What it cannot show is how the real nginx and PM2 behave; that is what `--rehearse` and the first deploy
 on the box are for. A new failure path gets a case here. To see that a case really guards its behaviour,
