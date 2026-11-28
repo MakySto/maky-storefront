@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+	appendFileSync,
 	existsSync,
 	mkdirSync,
 	readdirSync,
@@ -944,6 +945,190 @@ describe("deploy-production.sh, bridge: nginx prepared", () => {
 			expect(count(run.lines, NGINX_RELOAD)).toBe(0);
 			expect(count(run.lines, PM2_START_BRIDGE)).toBe(0);
 			expect(liveBuildId(w)).not.toBe("old-build");
+		},
+		SLOW,
+	);
+});
+
+describe("deploy-production.sh, bridge: lighter on Saleor than the live process", () => {
+	/** What the box's .env holds on production: the queue of the live process, and the sitemap warm-up on. */
+	const productionLikeDotenv = (w: World) =>
+		appendFileSync(join(w.app, ".env"), "SALEOR_MAX_CONCURRENT_REQUESTS=6\nMAKY_SITEMAP_PREWARM=1\n");
+	const ALL_SHARDS = [
+		"/sitemaps/sk-pages-1.xml",
+		"/sitemaps/sk-products-1.xml",
+		"/sitemaps/cz-products-1.xml",
+	];
+	const askedBy = (w: World, port: number) =>
+		w
+			.sitemapRequests()
+			.filter((request) => request.port === port)
+			.map((request) => request.path);
+
+	it(
+		"starts the bridge with 3 Saleor slots and no sitemap warm-up, gates it on the index and one shard, and reads every shard on the live process",
+		async () => {
+			const w = await bridgeWorld();
+			productionLikeDotenv(w);
+			const run = await deployUnderLoad(w, ["-m", "lighter bridge"]);
+
+			expect(run.code, run.out).toBe(0);
+			expect(run.customers.failures, JSON.stringify(run.customers.failures)).toEqual([]);
+			const out = plain(run.out);
+
+			// The bridge got both settings, over the values .env holds, and that is not reported as .env being shadowed.
+			expect(out).toContain(
+				"==> the bridge is given, on purpose and over .env: SALEOR_MAX_CONCURRENT_REQUESTS=3 MAKY_SITEMAP_PREWARM=0",
+			);
+			expect(out).toMatch(CLEAN_ENVIRONMENT_REPORT("the bridge"));
+			expect(out).not.toMatch(/warn: environment of the bridge/);
+			// What it runs with is read from what it printed at boot, not assumed from what it was given.
+			expect(out).toContain("==> the bridge's Saleor queue: 3 slots (its own boot line)");
+			expect(read(`${w.env.BUILD_LOG}.bridge-out`)).toContain("[saleor-queue] max_concurrent=3 ");
+
+			// The live process is registered without them: it runs with what .env says, and nothing is said to be on purpose.
+			const live = w.processEnvNames(LIVE_APP);
+			expect(live).not.toContain("SALEOR_MAX_CONCURRENT_REQUESTS");
+			expect(live).not.toContain("MAKY_SITEMAP_PREWARM");
+			expect(out).not.toMatch(/maky-storefront is given, on purpose/);
+			expect(out).toMatch(CLEAN_ENVIRONMENT_REPORT(LIVE_APP));
+
+			// The bridge read the index and the one product shard of the smoke market, nothing else of the sitemap;
+			// the live process on the new build, after the swap, read every shard the index names.
+			expect(new Set(askedBy(w, w.ports.bridge))).toEqual(
+				new Set(["/sitemap.xml", "/sitemaps/sk-products-1.xml"]),
+			);
+			expect(out).toContain(
+				"sitemap: the index names 3 shards; /sitemaps/sk-products-1.xml parsed, 8 <loc> elements",
+			);
+			const liveAsked = askedBy(w, w.ports.canonical);
+			for (const shard of ALL_SHARDS) expect(liveAsked).toContain(shard);
+			expect(out).toContain("sitemap: parsed as XML, 15 <loc> elements");
+			// In that order: the whole sitemap is read on the live process, the bridge's reads all came before.
+			const requests = w.sitemapRequests();
+			expect(requests.findLastIndex((r) => r.port === w.ports.bridge)).toBeLessThan(
+				requests.findIndex((r) => r.port === w.ports.canonical),
+			);
+
+			// The deployment log says how the bridge ran and how long the run took, for the next measurement.
+			const log = read(w.env.DEPLOY_LOG!);
+			expect(log).toContain(
+				"bridge:   SALEOR_MAX_CONCURRENT_REQUESTS=3 MAKY_SITEMAP_PREWARM=0; sitemap gate index and one shard",
+			);
+			expect(log).toMatch(/took:     \d+s from the start of the run to this record/);
+		},
+		SLOW,
+	);
+
+	it(
+		"rolls back, before the commit point, a sitemap that is broken in a shard the bridge did not read",
+		async () => {
+			const w = await bridgeWorld();
+			const before = liveTree(w);
+			// The bridge's tree answers every shard; the same build served from the live directory fails one.
+			w.setCtl("next-behavior", "shard500in=app\n");
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(1);
+			expect(plain(run.out)).toContain("/sitemap.xml or one of its shards is broken");
+			expect(run.out).toContain("deploy failed before the commit point");
+			expect(run.out).toContain("previous build is back up");
+			expect(run.customers.failures, JSON.stringify(run.customers.failures)).toEqual([]);
+			expect(askedBy(w, w.ports.bridge)).not.toContain("/sitemaps/cz-products-1.xml");
+			expect(liveBuildId(w)).toBe("old-build");
+			expect(liveTree(w)).toBe(before);
+			expect(w.pm2(BRIDGE_APP)).toBe("absent");
+			expect(upstreamState(w)).toBe("canonical-only");
+		},
+		SLOW,
+	);
+
+	it(
+		"says so when the bridge runs another queue than it was given",
+		async () => {
+			const w = await bridgeWorld();
+			// Something between the deploy and the process sets the queue again (here a daemon whose environment
+			// reaches what it starts): the number the bridge prints is the one that counts.
+			w.setCtl("pm2-leak-env", "SALEOR_MAX_CONCURRENT_REQUESTS=5\n");
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(0);
+			expect(plain(run.out)).toContain(
+				"warn: the bridge's Saleor queue is 5 slots, not the 3 it was given (its own boot line: [saleor-queue] max_concurrent=5 min_delay_ms=0)",
+			);
+		},
+		SLOW,
+	);
+
+	it(
+		"runs the bridge as before when asked to: the queue and warm-up of .env, and every shard on the bridge too",
+		async () => {
+			const w = await bridgeWorld();
+			productionLikeDotenv(w);
+			const run = await deployUnderLoad(w, ["-m", "x"], {
+				BRIDGE_SALEOR_MAX_CONCURRENT: "",
+				BRIDGE_SITEMAP_PREWARM: "",
+				BRIDGE_SITEMAP_GATE: "full",
+			});
+
+			expect(run.code, run.out).toBe(0);
+			const out = plain(run.out);
+			expect(out).not.toContain("on purpose and over .env");
+			expect(out).not.toContain("the bridge's Saleor queue");
+			// The fixture's app has no .env reader: with nothing in its environment it prints the default of src/lib/graphql.ts.
+			expect(read(`${w.env.BUILD_LOG}.bridge-out`)).toContain("[saleor-queue] max_concurrent=6 ");
+			const bridgeAsked = askedBy(w, w.ports.bridge);
+			for (const shard of ALL_SHARDS) expect(bridgeAsked).toContain(shard);
+			expect(read(w.env.DEPLOY_LOG!)).toContain("bridge:   nothing over .env; sitemap gate every shard");
+		},
+		SLOW,
+	);
+
+	it(
+		"rehearses with the same lighter bridge, and says that a rehearsal reads one shard",
+		async () => {
+			const w = await bridgeWorld();
+			const before = liveTree(w);
+			const run = await deployUnderLoad(w, ["--rehearse"]);
+
+			expect(run.code, run.out).toBe(0);
+			const out = plain(run.out);
+			expect(out).toContain(
+				"the bridge is given, on purpose and over .env: SALEOR_MAX_CONCURRENT_REQUESTS=3 MAKY_SITEMAP_PREWARM=0",
+			);
+			expect(out).toContain("sitemap: a rehearsal reads no other shard");
+			expect(new Set(askedBy(w, w.ports.bridge))).toEqual(
+				new Set(["/sitemap.xml", "/sitemaps/sk-products-1.xml"]),
+			);
+			expect(askedBy(w, w.ports.canonical)).toEqual([]);
+			expectLiveSiteUntouched(w, before, run);
+		},
+		SLOW,
+	);
+
+	it(
+		"shows the bridge's settings in the plan, and refuses one that would not do what it says before anything starts",
+		async () => {
+			const w = await bridgeWorld();
+			const plan = await deployUnderLoad(w, ["--dry-run"]);
+			expect(plan.code, plan.out).toBe(0);
+			expect(plain(plan.out)).toContain(
+				`the bridge, lighter on Saleor than ${LIVE_APP}: SALEOR_MAX_CONCURRENT_REQUESTS=3 MAKY_SITEMAP_PREWARM=0; sitemap gate index and one shard (every shard on ${LIVE_APP} after the swap)`,
+			);
+
+			const before = liveTree(w);
+			for (const [name, value] of [
+				["BRIDGE_SALEOR_MAX_CONCURRENT", "0"],
+				["BRIDGE_SALEOR_MAX_CONCURRENT", "three"],
+				["BRIDGE_SITEMAP_PREWARM", "off"],
+				["BRIDGE_SITEMAP_GATE", "none"],
+			] as const) {
+				const run = await deployUnderLoad(w, ["-m", "x"], { [name]: value });
+				expect(run.code, run.out).toBe(1);
+				expect(plain(run.out)).toContain(`${name} must be`);
+				expect(count(run.lines, /^pnpm build /)).toBe(0);
+				expectLiveSiteUntouched(w, before, run);
+			}
 		},
 		SLOW,
 	);

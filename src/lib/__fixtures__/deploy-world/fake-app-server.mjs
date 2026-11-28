@@ -1,6 +1,9 @@
 // A small web server that behaves like a healthy storefront build to the deploy script's gate:
 // pages that reference the stylesheet and script chunks of the build in --cwd, those chunks, the
-// files under public/, a sitemap index with one shard, 404 for junk, text/x-component for RSC.
+// files under public/, a sitemap index with three shards, 404 for junk, text/x-component for RSC.
+// Every sitemap request is written to <world>/sitemap-requests.log as `<port> <path>`, so a case can see which
+// process read which shard. At boot it prints its Saleor queue as src/instrumentation.ts does, from
+// SALEOR_MAX_CONCURRENT_REQUESTS in the environment it was started with (6 when there is none, as in src/lib/graphql.ts).
 // What it serves comes from the tree it was started in, so a build moved to another directory
 // is judged where it now lives. Behaviour switches are read from <cwd>/.next/FAKE_BEHAVIOR:
 //   css404in, failhome                         faults the gate must catch
@@ -12,6 +15,8 @@
 //                                              have passed and a market page is asked for
 //   release=on                                 the [release] line a process following the manifest prints
 //   statuslagin=<app|build>, statusafterms=N  what /api/catalog/status serves, below
+//   shard500in=<app|build>                     /sitemaps/cz-products-1.xml answers 500 in that tree: a shard only a
+//                                              reading of every shard finds broken
 // `--title <t>` is the process title (a next-server of another version: maky-smtp-app, Next 15).
 // And one property of how the process was started, `--hostname <h>` (what `-H <h>` gives next start): an explicit
 // loopback address reproduces what Next 16.3.6 did on the box when the bridge was started with -H 127.0.0.1
@@ -20,6 +25,7 @@
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const args = {};
 for (let i = 2; i < process.argv.length; i += 2) args[process.argv[i].slice(2)] = process.argv[i + 1];
@@ -32,6 +38,8 @@ process.title = args.title ?? "next-server (v16.0.0-fixture)";
 const rewriteLeavesOrigin = /^(127(\.\d{1,3}){3}|\[?::1\]?)$/.test(args.hostname ?? "");
 const startedAt = Date.now();
 let recovered = false;
+// The box: this file is <world>/fake/fake-app-server.mjs.
+const world = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 function behaviour() {
 	try {
@@ -71,6 +79,7 @@ function bootLines() {
 	const lines = [
 		"[market-state] live=sk preview= unknown=",
 		"[route-existence] gate=on markets=sk families=x",
+		`[saleor-queue] max_concurrent=${process.env.SALEOR_MAX_CONCURRENT_REQUESTS || 6} min_delay_ms=0`,
 	];
 	if (b.release === "on") {
 		lines.push(
@@ -113,7 +122,12 @@ function html() {
 }
 
 const PAGES = new Set(["/sk", "/sk/products", "/sk/stresne-nosice", "/checkout"]);
-const SHARD = "/sitemaps/sk-products-1.xml";
+// In the order the real index names them: a market's pages, then its products; then the next market.
+const SHARDS = {
+	"/sitemaps/sk-pages-1.xml": ["/sk", "/sk/products", "/sk/stresne-nosice"],
+	"/sitemaps/sk-products-1.xml": Array.from({ length: 8 }, (_, i) => `/sk/produkt-${i + 1}`),
+	"/sitemaps/cz-products-1.xml": Array.from({ length: 4 }, (_, i) => `/cz/produkt-${i + 1}`),
+};
 
 // Like next start, which writes ISR shells and the image cache into the tree it serves: every request
 // leaves the working directory of the process that answered it in .next/cache/touched.log.
@@ -151,18 +165,28 @@ const server = http.createServer((req, res) => {
 		}
 		return send(404, "text/plain", "no such chunk");
 	}
+	if (p === "/sitemap.xml" || p in SHARDS) {
+		try {
+			fs.appendFileSync(path.join(world, "sitemap-requests.log"), `${port} ${p}\n`);
+		} catch {
+			// the log is for the cases; the answer does not depend on it
+		}
+	}
 	if (p === "/sitemap.xml") {
+		const shards = Object.keys(SHARDS)
+			.map((shard) => `<sitemap><loc>https://maky.store${shard}</loc></sitemap>`)
+			.join("");
 		return send(
 			200,
 			"application/xml",
-			`<?xml version="1.0"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>https://maky.store${SHARD}</loc></sitemap></sitemapindex>`,
+			`<?xml version="1.0"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${shards}</sitemapindex>`,
 		);
 	}
-	if (p === SHARD) {
-		const urls = Array.from(
-			{ length: 8 },
-			(_, i) => `<url><loc>https://maky.store/sk/produkt-${i + 1}</loc></url>`,
-		).join("");
+	if (p === "/sitemaps/cz-products-1.xml" && b.shard500in && path.basename(cwd) === b.shard500in) {
+		return send(500, "text/plain", "the walk failed");
+	}
+	if (p in SHARDS) {
+		const urls = SHARDS[p].map((loc) => `<url><loc>https://maky.store${loc}</loc></url>`).join("");
 		return send(
 			200,
 			"application/xml",

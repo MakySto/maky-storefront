@@ -109,6 +109,8 @@ export interface World {
 	processEnvNames(name: string): string[];
 	/** The pid PM2 holds for `name`, or 0. */
 	pid(name: string): number;
+	/** Every sitemap request any process of the box answered, in order: which port asked for which path. */
+	sitemapRequests(): { port: number; path: string }[];
 	/**
 	 * A second next-server on the box, registered as maky-smtp-app is (Next 15, its own directory, a credential-looking
 	 * variable of its own): it must never be mistaken for the live process. Returns its pid.
@@ -430,6 +432,17 @@ export async function createWorld(): Promise<World> {
 		pid(name) {
 			const file = join(root, "pm2", `${name}.pid`);
 			return existsSync(file) ? Number(readFileSync(file, "utf8").trim()) : 0;
+		},
+		sitemapRequests() {
+			const file = join(root, "sitemap-requests.log");
+			if (!existsSync(file)) return [];
+			return readFileSync(file, "utf8")
+				.split("\n")
+				.filter(Boolean)
+				.map((line) => {
+					const [port, path] = line.split(" ");
+					return { port: Number(port), path: path ?? "" };
+				});
 		},
 		processEnvNames(name) {
 			const pid = world.pid(name);
